@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Analysis Dashboard Tool — User Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the active tab */
+        .tab-active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        /* Simple transition for tab content */
+        .tab-content {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-5xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Performance Analysis Dashboard Tool</h1>
+            <p class="text-lg text-gray-600 mt-2">Your Interactive User Guide</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav id="tab-nav" class="flex flex-wrap -mb-px px-4 sm:px-6" aria-label="Tabs">
+                    <!-- Tabs will be inserted here by JavaScript -->
+                </nav>
+            </div>
+
+            <!-- Tab Content Area -->
+            <div id="tab-content-area" class="p-6 sm:p-8">
+                <!-- Content will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>&copy; 2024 Performance Analysis Dashboard. All Rights Reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Data structure for tabs and their content
+            const tabData = [
+                {
+                    title: '🚀 Introduction',
+                    id: 'introduction',
+                    content: `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome!</h2>
+                        <p class="mb-4 text-gray-700">The Performance Analysis Dashboard Tool is designed to help QA engineers, developers, and analysts interpret performance test results visually and interactively. By uploading result files from tools like JMeter, you can quickly assess system responsiveness, throughput, error patterns, and critical bottlenecks.</p>
+                        <p class="mb-4 text-gray-700">This guide will walk you through how to use the tool effectively, especially for analyzing .jmx test data.</p>
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mt-6">
+                            <h3 class="font-semibold text-blue-800">Getting Started is Easy</h3>
+                            <ol class="list-decimal list-inside mt-2 text-gray-700 space-y-2">
+                                <li><strong>Upload a Test Result File:</strong> On the main screen, click the "Upload Results File(s)" section. Drag and drop or click to upload files with extensions .jmx, .csv, or .json.</li>
+                                <li><strong>Use Filters:</strong> Once data is loaded, use filters like 'Label', 'Status', and 'Response Time Threshold' to refine your view.</li>
+                                <li><strong>Analyze:</strong> The dashboard will parse your file and display interactive visualizations instantly.</li>
+                            </ol>
+                        </div>
+                    `
+                },
+                {
+                    title: '📊 Summary Cards',
+                    id: 'summary-cards',
+                    content: `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview: Summary Cards</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                                <h3 class="font-bold text-lg text-gray-900">1. Total Requests</h3>
+                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The total number of performance samples collected during the test.</p>
+                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> Helps gauge the scope of the load test.</p>
+                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-2 rounded"><em>"The test generated 3,000 requests in total."</em></p>
+                            </div>
+                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                                <h3 class="font-bold text-lg text-gray-900">2. Total Errors</h3>
+                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The number of failed requests (s="false" in .jmx).</p>
+                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> A high error count could indicate application or server failures under load.</p>
+                                <p class="mt-2 text-sm text-red-700 bg-red-100 p-2 rounded"><em>"Out of 3,000 total requests, 258 failed."</em></p>
+                            </div>
+                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                                <h3 class="font-bold text-lg text-gray-900">3. Avg / Max Response Time (ms)</h3>
+                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> Shows average and maximum response time across all requests.</p>
+                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> High response time implies latency or backend inefficiencies.</p>
+                                <p class="mt-2 text-sm text-yellow-700 bg-yellow-100 p-2 rounded"><em>"Max response time was 22,919ms. Avg was ~2,850ms."</em></p>
+                            </div>
+                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                                <h3 class="font-bold text-lg text-gray-900">4. Peak Throughput (req/s)</h3>
+                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The highest number of requests per second observed.</p>
+                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> Useful to identify the system’s peak capacity.</p>
+                                <p class="mt-2 text-sm text-green-700 bg-green-100 p-2 rounded"><em>"The system reached a peak throughput of 57 req/s."</em></p>
+                            </div>
+                             <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 md:col-span-2">
+                                <h3 class="font-bold text-lg text-gray-900">5. Threshold Breaches</h3>
+                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The number of requests that exceeded a user-defined response time threshold (e.g., 2000ms).</p>
+                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> Helps identify slow transactions that are violating Service Level Agreements (SLAs).</p>
+                                <p class="mt-2 text-sm text-purple-700 bg-purple-100 p-2 rounded"><em>"354 requests breached the 2000ms threshold."</em></p>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: '📈 Interactive Charts',
+                    id: 'charts',
+                    content: `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Deep Dive: Interactive Charts</h2>
+                        <p class="mb-6 text-gray-700">Each chart offers visual insight and allows for saving images or maximizing views for detailed analysis. Here's what each chart tells you:</p>
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">1. Response Time Over Time</h3>
+                                <p class="mt-2 text-gray-600">A line chart showing sample times across the test timeline, grouped by label. It's perfect for spotting spikes or performance degradation over the duration of the test.</p>
+                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "A significant spike occurred at 14:23:02 with a response time of 22,919ms for 'Staff and Deployment: Detail'."</p>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">2. Throughput (Requests/sec)</h3>
+                                <p class="mt-2 text-gray-600">Shows the number of requests your system handled per second. Plateaus in this chart can suggest that the server has saturated its capacity or hit a bottleneck.</p>
+                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "Throughput plateaued at 57 req/s, suggesting the server may have reached its limit."</p>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">3. 90th/95th Percentiles by Label</h3>
+                                <p class="mt-2 text-gray-600">A bar chart showing response time percentiles for each API label. Percentiles offer a more realistic view of user experience than simple averages because they ignore outlier extremes.</p>
+                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "'Invoice List: Summary' had a 95th percentile at 4,800ms, indicating long-tail performance concerns."</p>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">4. Error Distribution</h3>
+                                <p class="mt-2 text-gray-600">A horizontal bar chart that displays the number of errors per label. This immediately pinpoints which endpoints or functions are the most error-prone.</p>
+                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "All 258 errors were from 'Invoice List: Preview Detail', likely indicating internal server failures."</p>
+                            </div>
+                             <div>
+                                <h3 class="text-xl font-semibold text-gray-900">5. Success vs. Failure Trend</h3>
+                                <p class="mt-2 text-gray-600">A time-series chart that plots successful requests against failed requests per second. It's great for highlighting if failure rates increase during specific load periods.</p>
+                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "Between 14:25 and 14:30, failure rates spiked significantly as the load ramped up."</p>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    title: '🧾 Raw Data Table',
+                    id: 'raw-data',
+                    content: `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Viewing Raw Data: Detailed Table</h2>
+                        <p class="mb-6 text-gray-700">For the most granular analysis, scroll to the <strong>Detailed Data</strong> section in the tool to view every single request. The table includes pagination and helpful color-coding.</p>
+                        
+                        <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                            <h3 class="font-semibold text-lg text-gray-900 mb-3">Table Columns</h3>
+                            <ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-gray-700">
+                                <li>Start Time</li>
+                                <li>Thread Name</li>
+                                <li>Label</li>
+                                <li>Sample Time (ms)</li>
+                                <li>Status</li>
+                                <li>Bytes</li>
+                                <li>Sent Bytes</li>
+                                <li>Latency</li>
+                                <li>Connect Time</li>
+                            </ul>
+                        </div>
+
+                        <div class="mt-6">
+                            <h3 class="font-semibold text-lg text-gray-900 mb-3">Key Features</h3>
+                             <ul class="space-y-3">
+                                <li class="flex items-start">
+                                    <span class="text-red-500 mr-3 text-2xl">❌</span>
+                                    <div><strong class="text-red-600">Red Rows for Failures:</strong> Failed requests are highlighted in red for immediate identification.</div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-yellow-500 mr-3 text-2xl">⚠️</span>
+                                    <div><strong class="text-yellow-600">Yellow Rows for Breaches:</strong> Requests that exceed your response time threshold are marked in yellow.</div>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-3 text-2xl">📄</span>
+                                    <div><strong>Pagination:</strong> Data is neatly organized into pages (e.g., 20 rows/page) for easy browsing.</div>
+                                </li>
+                            </ul>
+                        </div>
+                    `
+                },
+                {
+                    title: '📤 Exporting & Tips',
+                    id: 'exporting-tips',
+                    content: `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Exporting Reports & Getting Tips</h2>
+                        <p class="mb-6 text-gray-700">Share your findings easily or get automated insights from our Assistant.</p>
+                        
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">1. Export PDF Report</h3>
+                                <p class="mt-2 text-gray-600">Click the <strong>"Export PDF"</strong> button to download a comprehensive, printable PDF. This report includes all summary metrics and charts, making it perfect for sharing with stakeholders.</p>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">2. Download Filtered CSV</h3>
+                                <p class="mt-2 text-gray-600">Click <strong>"Download CSV"</strong> to get a CSV file of the data currently displayed in the table. This is useful for external analysis, archiving raw metrics, or custom reporting.</p>
+                            </div>
+                            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                                <h3 class="text-xl font-semibold text-green-800">💡 Assistant Guidance</h3>
+                                <p class="mt-2 text-gray-700">If the <strong>"Show Assistant Tips"</strong> toggle is enabled, the tool will provide helpful, context-aware insights below key charts. These tips automatically highlight important findings like response spikes, error surges, or performance bottlenecks based on your uploaded data.</p>
+                            </div>
+                        </div>
+                    `
+                }
+            ];
+
+            const tabNav = document.getElementById('tab-nav');
+            const contentArea = document.getElementById('tab-content-area');
+
+            // Generate tabs and content containers
+            tabData.forEach((tab, index) => {
+                // Create tab button
+                const tabButton = document.createElement('a');
+                tabButton.href = '#';
+                tabButton.innerHTML = tab.title;
+                tabButton.className = `tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-blue-600 hover:border-blue-300 ${index === 0 ? 'tab-active' : ''}`;
+                tabButton.dataset.tab = tab.id;
+                tabNav.appendChild(tabButton);
+
+                // Create content div
+                const contentDiv = document.createElement('div');
+                contentDiv.id = tab.id;
+                contentDiv.className = `tab-content ${index !== 0 ? 'hidden' : ''}`;
+                contentDiv.innerHTML = tab.content;
+                contentArea.appendChild(contentDiv);
+            });
+
+            // Tab switching logic
+            tabNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                const clickedTab = e.target.closest('.tab-button');
+                if (!clickedTab) return;
+
+                const tabId = clickedTab.dataset.tab;
+
+                // Update active tab styles
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.classList.remove('tab-active');
+                });
+                clickedTab.classList.add('tab-active');
+
+                // Show/hide content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id === tabId) {
+                        content.classList.remove('hidden');
+                        content.style.opacity = 0;
+                        setTimeout(() => content.style.opacity = 1, 50);
+                    } else {
+                        content.classList.add('hidden');
+                        content.style.opacity = 0;
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
