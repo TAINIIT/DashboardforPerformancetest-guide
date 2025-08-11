@@ -9,26 +9,69 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease;
         }
-        /* Style for the active tab */
         .tab-active {
             border-bottom-color: #3b82f6;
             color: #3b82f6;
             font-weight: 600;
         }
-        /* Simple transition for tab content */
-        .tab-content {
-            transition: opacity 0.3s ease-in-out;
+        .lang-btn-active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        @keyframes fadeIn {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-on-hover:hover .bouncer {
+          animation: bounce 1s infinite;
+        }
+        #footer-quote {
+            transition: opacity 0.5s ease-in-out;
+        }
+        .clarity-img { 
+            max-width: 680px;
+            width: 100%;
+            height: auto;
+            image-rendering: auto;
+            -ms-interpolation-mode: bicubic;
+        }
+        .chart-block img.clarity-img { 
+            object-fit: contain; 
+        }
+        @media (min-width: 1024px) {
+          .clarity-img { max-height: 420px; }
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-5xl">
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Performance Analysis Dashboard Tool</h1>
-            <p class="text-lg text-gray-600 mt-2">Your Interactive User Guide</p>
+    <!-- Startup Boot Animation -->
+    <div id="boot-screen" class="fixed inset-0 bg-white flex items-center justify-center text-xl font-bold z-50 transition-opacity duration-1000 ease-out opacity-100">
+        <p data-lang-key="boot_message">Initializing Dashboard Engine...</p>
+    </div>
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+        <!-- Header with Language Switcher -->
+        <header id="main-header" class="relative text-center mb-8 bg-fixed bg-gradient-to-r from-blue-50 to-white py-12 rounded-xl">
+            <div class="absolute top-4 right-4">
+                <div class="flex space-x-1 border border-gray-300 rounded-lg p-1">
+                    <button id="lang-en" class="lang-btn px-3 py-1 text-sm font-medium rounded-md transition-colors lang-btn-active">EN</button>
+                    <button id="lang-vn" class="lang-btn px-3 py-1 text-sm font-medium rounded-md transition-colors">VN</button>
+                </div>
+            </div>
+            <h1 data-lang-key="main_title" class="text-3xl sm:text-4xl font-bold text-gray-900 hover:scale-105 transform transition duration-300 ease-out">
+                Performance Analysis Dashboard Tool
+            </h1>
+            <p id="contextual-greeting" class="text-blue-600 mt-2 text-lg"></p>
         </header>
 
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -45,220 +88,299 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="text-center mt-8 text-gray-500 text-sm">
-            <p>&copy; 2024 Performance Analysis Dashboard. All Rights Reserved.</p>
+        <!-- Footer with rotating quote -->
+        <footer id="footer" class="text-center mt-8 text-gray-500 text-sm">
+            <!-- Rotating quote and copyright will be inserted here -->
         </footer>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Data structure for tabs and their content
-            const tabData = [
-                {
-                    title: '🚀 Introduction',
-                    id: 'introduction',
-                    content: `
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome!</h2>
-                        <p class="mb-4 text-gray-700">The Performance Analysis Dashboard Tool is designed to help QA engineers, developers, and analysts interpret performance test results visually and interactively. By uploading result files from tools like JMeter, you can quickly assess system responsiveness, throughput, error patterns, and critical bottlenecks.</p>
-                        <p class="mb-4 text-gray-700">This guide will walk you through how to use the tool effectively, especially for analyzing .jmx test data.</p>
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mt-6">
-                            <h3 class="font-semibold text-blue-800">Getting Started is Easy</h3>
-                            <ol class="list-decimal list-inside mt-2 text-gray-700 space-y-2">
-                                <li><strong>Upload a Test Result File:</strong> On the main screen, click the "Upload Results File(s)" section. Drag and drop or click to upload files with extensions .jmx, .csv, or .json.</li>
-                                <li><strong>Use Filters:</strong> Once data is loaded, use filters like 'Label', 'Status', and 'Response Time Threshold' to refine your view.</li>
-                                <li><strong>Analyze:</strong> The dashboard will parse your file and display interactive visualizations instantly.</li>
-                            </ol>
+            // --- Translations Object ---
+            const translations = {
+                en: {
+                    boot_message: "Initializing Dashboard Engine...",
+                    main_title: "Performance Analysis Dashboard Tool",
+                    greeting_morning: "Good Morning!",
+                    greeting_afternoon: "Good Afternoon!",
+                    greeting_evening: "Good Evening!",
+                    greeting_suffix: "Ready to decode performance like a boss?",
+                    tab_intro: "🚀 Introduction",
+                    tab_dashboard: '<span class="bouncer">📊</span> Dashboard',
+                    tab_raw: "🧾 Raw Data Explained",
+                    tab_export: "📤 Exporting & Tips",
+                    footer_copyright: "&copy; 2025 Performance Analysis Dashboard by TSB. All Rights Reserved.",
+                    quotes: [
+                        "Every number tells a story – uncover it.",
+                        "Performance speaks louder than promises.",
+                        "Good data, great decisions.",
+                        "Metrics don’t lie. They whisper insights."
+                    ],
+                    // --- CONTENT FOR ALL TABS (ENGLISH) ---
+                    "introduction_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome!</h2><p class="mb-4 text-gray-700">The Performance Analysis Dashboard Tool is designed to help QA engineers, developers, and analysts interpret performance test results visually and interactively. By uploading result files from tools like JMeter, you can quickly assess system responsiveness, throughput, error patterns, and critical bottlenecks.</p><p class="mb-4 text-gray-700">This guide will walk you through how to use the tool effectively, especially for analyzing .jmx test data.</p><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mt-6"><h3 class="font-semibold text-blue-800">Getting Started is Easy</h3><ol class="list-decimal list-inside mt-2 text-gray-700 space-y-2"><li><strong>Upload a Test Result File:</strong> On the main screen, click the "Upload Results File(s)" section. Drag and drop or click to upload files with extensions .jmx, .csv, or .json.</li><li><strong>Use Filters:</strong> Once data is loaded, use filters like 'Label', 'Status', and 'Response Time Threshold' to refine your view.</li><li><strong>Analyze:</strong> The dashboard will parse your file and display interactive visualizations instantly.</li></ol></div>`,
+                    "dashboard_content": `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Full Dashboard View</h2>
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                            <div class="bg-blue-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-blue-800">Total Requests</h3><p class="text-2xl font-semibold text-blue-900">500</p></div>
+                            <div class="bg-red-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-red-800">Total Errors</h3><p class="text-2xl font-semibold text-red-900">50</p></div>
+                            <div class="bg-yellow-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-yellow-800">Avg/Max Response</h3><p class="text-2xl font-semibold text-yellow-900">3614 / 25556</p></div>
+                            <div class="bg-green-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-green-800">Peak Throughput</h3><p class="text-2xl font-semibold text-green-900">7 req/s</p></div>
+                            <div class="bg-purple-100 p-4 rounded-lg text-center shadow col-span-2 lg:col-span-1"><h3 class="font-bold text-purple-800">Threshold Breaches</h3><p class="text-2xl font-semibold text-purple-900">0</p></div>
                         </div>
-                    `
+                        <!-- Charts and Explanations -->
+                        <div class="space-y-12">
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/3RX9SKyv/2-Response-Time-Over.png" alt="Response Time Over Time Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">1. Response Time Over Time (by Label)</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart displays the response time for every request throughout the test. Each colored line is a different transaction (e.g., 'Login', 'Add to Cart'). The data shows many sharp spikes, with some reaching over 25,000ms, indicating severe, intermittent slowdowns.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> Imagine you're at a drive-thru. Most cars get their food in 5 minutes. But this chart shows that randomly, some cars wait 25 minutes. It helps us see exactly when those long waits happen and for which food order ('Label').</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/KjmfCdLs/3-Throughput.png" alt="Throughput Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">2. Throughput (Requests/sec)</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart measures how many requests the system successfully handles each second. The data shows a very unstable throughput, fluctuating between 1 and 7 requests/sec, meaning the system's processing capability is erratic.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> This is like a cashier's speed. The chart shows that sometimes the cashier serves 7 people per minute, but then suddenly slows down to only 1. This tells us the cashier can't maintain a steady pace, which is a problem for the queue.</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/Vv4gwDWs/4-90th.png" alt="Percentiles Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">3. 90th/95th Percentiles by Label</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart reveals the "worst-case" experience for most users. The data shows that for the first two labels, 5-10% of requests took over 10,000ms, which is very slow, even if the average time was okay.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> If the 95th percentile for 'Login' is 10 seconds, it means 95 out of 100 people logged in faster than 10 seconds, but 5 people had to wait 10 seconds or more. It highlights hidden frustrations that an average wouldn't show.</p>
+                                </div>
+                            </div>
+                             <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/022Zn19z/5-Error-Distribution.png" alt="Error Distribution Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">4. Error Distribution by Label</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart pinpoints where errors are happening. The data clearly shows one massive bar, meaning nearly all 50 errors came from a single transaction ('Invoice List: Preview Detail').</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> If you sell 100 different products, this chart tells you that only one product is causing all the customer complaints. You know exactly where to focus your attention to fix the problem.</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/52Xgc5Y1/6-Success-Failure.png" alt="Success vs. Failure Trend Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">5. Success vs. Failure Trend</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart compares successful requests (green area) against failed requests (red line) over time. The data shows that while most requests succeed, there are small, consistent spikes of errors throughout the test.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> This is a factory's quality report. The chart shows that the factory is mostly producing good products (big green area), but every hour, a few defective products (small red spikes) are made. It tells us the problem is small but continuous.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    "raw-data_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Understanding the Detailed Data Table</h2><p class="mb-6 text-gray-700">The <strong>Detailed Data</strong> table, which would appear in a full report, provides the most granular analysis by listing every single request. The table includes pagination and helpful color-coding for quick insights.</p><div class="bg-gray-50 p-5 rounded-lg border border-gray-200"><h3 class="font-semibold text-lg text-gray-900 mb-3">Table Columns Explained</h3><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-gray-700"><li><strong>Start Time:</strong> When the request was initiated.</li><li><strong>Thread Name:</strong> The virtual user thread that sent the request.</li><li><strong>Label:</strong> The name of the specific request or transaction.</li><li><strong>Sample Time (ms):</strong> Total time taken for the request (end-to-end).</li><li><strong>Status:</strong> Whether the request was a 'Success' or 'Failure'.</li><li><strong>Bytes:</strong> Size of the response data in bytes.</li><li><strong>Sent Bytes:</strong> Size of the data sent in the request.</li><li><strong>Latency:</strong> Time to first byte of the response.</li><li><strong>Connect Time:</strong> Time taken to establish a connection to the server.</li></ul></div><div class="mt-6"><h3 class="font-semibold text-lg text-gray-900 mb-3">Key Features</h3><ul class="space-y-3"><li class="flex items-start"><span class="text-red-500 mr-3 text-2xl">❌</span><div><strong class="text-red-600">Red Rows for Failures:</strong> Failed requests are highlighted in red for immediate identification.</div></li><li class="flex items-start"><span class="text-yellow-500 mr-3 text-2xl">⚠️</span><div><strong class="text-yellow-600">Yellow Rows for Breaches:</strong> Requests that exceed your response time threshold are marked in yellow.</div></li><li class="flex items-start"><span class="text-blue-500 mr-3 text-2xl">📄</span><div><strong>Pagination:</strong> Data is neatly organized into pages for easy browsing.</div></li></ul></div>`,
+                    "exporting-tips_content": `<h2 class="text-2xl font-bold text-gray-800 mb-6">Exporting Reports & Getting Tips</h2><p class="mb-6 text-gray-700">Share your findings easily or get automated insights from our Assistant.</p><div class="space-y-8"><div><h3 class="text-xl font-semibold text-gray-900">1. Export PDF Report</h3><p class="mt-2 text-gray-600">Click the <strong>"Export PDF"</strong> button to download a comprehensive, printable PDF. This report includes all summary metrics and charts, making it perfect for sharing with stakeholders.</p></div><div><h3 class="text-xl font-semibold text-gray-900">2. Download Filtered CSV</h3><p class="mt-2 text-gray-600">Click <strong>"Download CSV"</strong> to get a CSV file of the data currently displayed in the table. This is useful for external analysis, archiving raw metrics, or custom reporting.</p></div><div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg"><h3 class="text-xl font-semibold text-green-800">💡 Assistant Guidance</h3><p class="mt-2 text-gray-700">If the <strong>"Show Assistant Tips"</strong> toggle is enabled, the tool will provide helpful, context-aware insights below key charts. These tips automatically highlight important findings like response spikes, error surges, or performance bottlenecks based on your uploaded data.</p></div></div>`
                 },
-                {
-                    title: '📊 Summary Cards',
-                    id: 'summary-cards',
-                    content: `
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview: Summary Cards</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                                <h3 class="font-bold text-lg text-gray-900">1. Total Requests</h3>
-                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The total number of performance samples collected during the test.</p>
-                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> Helps gauge the scope of the load test.</p>
-                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-2 rounded"><em>"The test generated 3,000 requests in total."</em></p>
+                vn: {
+                    boot_message: "Đang khởi tạo Engine Bảng điều khiển...",
+                    main_title: "Công cụ Bảng điều khiển Phân tích Hiệu suất",
+                    greeting_morning: "Chào buổi sáng!",
+                    greeting_afternoon: "Chào buổi chiều!",
+                    greeting_evening: "Chào buổi tối!",
+                    greeting_suffix: "Sẵn sàng giải mã hiệu suất như một chuyên gia?",
+                    tab_intro: "🚀 Giới thiệu",
+                    tab_dashboard: '<span class="bouncer">📊</span> Bảng điều khiển',
+                    tab_raw: "🧾 Giải thích Dữ liệu Thô",
+                    tab_export: "📤 Xuất & Mẹo",
+                    footer_copyright: "&copy; 2024 Bảng điều khiển Phân tích Hiệu suất. Mọi quyền được bảo lưu.",
+                    quotes: [
+                        "Mỗi con số đều kể một câu chuyện – hãy khám phá nó.",
+                        "Hiệu suất nói lên nhiều điều hơn lời hứa.",
+                        "Dữ liệu tốt, quyết định tuyệt vời.",
+                        "Số liệu không nói dối. Chúng thì thầm những hiểu biết sâu sắc."
+                    ],
+                    // --- CONTENT FOR ALL TABS (VIETNAMESE) ---
+                    "introduction_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Chào mừng!</h2><p class="mb-4 text-gray-700">Công cụ Bảng điều khiển Phân tích Hiệu suất được thiết kế để giúp các kỹ sư QA, nhà phát triển và nhà phân tích diễn giải kết quả kiểm tra hiệu suất một cách trực quan và tương tác. Bằng cách tải lên các tệp kết quả từ các công cụ như JMeter, bạn có thể nhanh chóng đánh giá khả năng phản hồi của hệ thống, thông lượng, các mẫu lỗi và các điểm nghẽn quan trọng.</p><p class="mb-4 text-gray-700">Hướng dẫn này sẽ chỉ cho bạn cách sử dụng công cụ một cách hiệu quả, đặc biệt là để phân tích dữ liệu kiểm tra .jmx.</p><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mt-6"><h3 class="font-semibold text-blue-800">Bắt đầu thật dễ dàng</h3><ol class="list-decimal list-inside mt-2 text-gray-700 space-y-2"><li><strong>Tải lên Tệp Kết quả Kiểm tra:</strong> Trên màn hình chính, nhấp vào phần "Tải lên Tệp Kết quả". Kéo và thả hoặc nhấp để tải lên các tệp có phần mở rộng .jmx, .csv hoặc .json.</li><li><strong>Sử dụng Bộ lọc:</strong> Sau khi dữ liệu được tải, hãy sử dụng các bộ lọc như 'Nhãn', 'Trạng thái' và 'Ngưỡng Thời gian Phản hồi' để tinh chỉnh chế độ xem của bạn.</li><li><strong>Phân tích:</strong> Bảng điều khiển sẽ phân tích cú pháp tệp của bạn và hiển thị các hình ảnh hóa tương tác ngay lập tức.</li></ol></div>`,
+                    "dashboard_content": `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Chế độ xem Toàn bộ Bảng điều khiển</h2>
+                        <!-- Thẻ Tóm tắt -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                            <div class="bg-blue-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-blue-800">Tổng Yêu cầu</h3><p class="text-2xl font-semibold text-blue-900">500</p></div>
+                            <div class="bg-red-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-red-800">Tổng Lỗi</h3><p class="text-2xl font-semibold text-red-900">50</p></div>
+                            <div class="bg-yellow-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-yellow-800">Phản hồi TB/Tối đa</h3><p class="text-2xl font-semibold text-yellow-900">3614 / 25556</p></div>
+                            <div class="bg-green-100 p-4 rounded-lg text-center shadow"><h3 class="font-bold text-green-800">Thông lượng Đỉnh</h3><p class="text-2xl font-semibold text-green-900">7 y.cầu/giây</p></div>
+                            <div class="bg-purple-100 p-4 rounded-lg text-center shadow col-span-2 lg:col-span-1"><h3 class="font-bold text-purple-800">Vi phạm Ngưỡng</h3><p class="text-2xl font-semibold text-purple-900">0</p></div>
+                        </div>
+                        <!-- Biểu đồ và Giải thích -->
+                        <div class="space-y-12">
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/3RX9SKyv/2-Response-Time-Over.png" alt="Biểu đồ Thời gian Phản hồi" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">1. Thời gian Phản hồi Theo Thời gian (theo Nhãn)</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Thời gian phản hồi của mỗi yêu cầu trong suốt quá trình kiểm tra. Mỗi đường màu là một giao dịch khác nhau (ví dụ: 'Đăng nhập', 'Thêm vào giỏ hàng'). Dữ liệu cho thấy nhiều đột biến sắc nét, một số lên tới hơn 25.000ms, cho thấy tình trạng chậm nghiêm trọng và không liên tục.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Hãy tưởng tượng bạn đang ở quầy cà phê. Hầu hết mọi người nhận được cà phê trong 5 phút. Nhưng biểu đồ này cho thấy rằng một cách ngẫu nhiên, một số người phải đợi 25 phút. Nó giúp chúng ta thấy chính xác khi nào những lần chờ đợi lâu đó xảy ra và cho loại đơn hàng nào ('Nhãn').</p>
+                                </div>
                             </div>
-                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                                <h3 class="font-bold text-lg text-gray-900">2. Total Errors</h3>
-                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The number of failed requests (s="false" in .jmx).</p>
-                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> A high error count could indicate application or server failures under load.</p>
-                                <p class="mt-2 text-sm text-red-700 bg-red-100 p-2 rounded"><em>"Out of 3,000 total requests, 258 failed."</em></p>
+                            <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/KjmfCdLs/3-Throughput.png" alt="Biểu đồ Thông lượng" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">2. Thông lượng (Yêu cầu/giây)</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Số lượng yêu cầu mà hệ thống xử lý thành công mỗi giây. Dữ liệu cho thấy thông lượng rất không ổn định, dao động từ 1 đến 7 yêu cầu/giây, có nghĩa là khả năng xử lý của hệ thống rất thất thường.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Điều này giống như tốc độ của một nhân viên thu ngân. Biểu đồ cho thấy đôi khi nhân viên phục vụ 7 người mỗi phút, nhưng sau đó đột ngột chậm lại chỉ còn 1 người. Điều này cho chúng ta biết nhân viên không thể duy trì một tốc độ ổn định, gây ra vấn đề cho hàng đợi.</p>
+                                </div>
                             </div>
-                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                                <h3 class="font-bold text-lg text-gray-900">3. Avg / Max Response Time (ms)</h3>
-                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> Shows average and maximum response time across all requests.</p>
-                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> High response time implies latency or backend inefficiencies.</p>
-                                <p class="mt-2 text-sm text-yellow-700 bg-yellow-100 p-2 rounded"><em>"Max response time was 22,919ms. Avg was ~2,850ms."</em></p>
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/Vv4gwDWs/4-90th.png" alt="Biểu đồ Phân vị" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">3. Phân vị 90/95 theo Nhãn</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Trải nghiệm "tồi tệ nhất" đối với hầu hết người dùng. Dữ liệu cho thấy đối với hai nhãn đầu tiên, 5-10% yêu cầu mất hơn 10.000ms, rất chậm, ngay cả khi thời gian trung bình vẫn ổn.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Nếu phân vị thứ 95 cho 'Đăng nhập' là 10 giây, điều đó có nghĩa là 95 trong số 100 người đăng nhập nhanh hơn 10 giây, nhưng 5 người phải đợi 10 giây hoặc hơn. Nó làm nổi bật những sự bực bội tiềm ẩn mà một giá trị trung bình sẽ che giấu.</p>
+                                </div>
                             </div>
-                            <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                                <h3 class="font-bold text-lg text-gray-900">4. Peak Throughput (req/s)</h3>
-                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The highest number of requests per second observed.</p>
-                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> Useful to identify the system’s peak capacity.</p>
-                                <p class="mt-2 text-sm text-green-700 bg-green-100 p-2 rounded"><em>"The system reached a peak throughput of 57 req/s."</em></p>
+                             <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/022Zn19z/5-Error-Distribution.png" alt="Biểu đồ Phân phối Lỗi" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">4. Phân phối Lỗi theo Nhãn</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Nơi mà các lỗi đang xảy ra. Dữ liệu cho thấy rõ một thanh lớn, có nghĩa là gần như tất cả 50 lỗi đều đến từ một giao dịch duy nhất ('Invoice List: Preview Detail').</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Nếu bạn bán 100 sản phẩm khác nhau, biểu đồ này cho bạn biết rằng chỉ có một sản phẩm gây ra tất cả các khiếu nại của khách hàng. Bạn biết chính xác nơi cần tập trung sự chú ý để khắc phục sự cố.</p>
+                                </div>
                             </div>
-                             <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 md:col-span-2">
-                                <h3 class="font-bold text-lg text-gray-900">5. Threshold Breaches</h3>
-                                <p class="mt-2 text-sm text-gray-600"><strong>What is it?</strong> The number of requests that exceeded a user-defined response time threshold (e.g., 2000ms).</p>
-                                <p class="mt-1 text-sm text-gray-600"><strong>Why it matters:</strong> Helps identify slow transactions that are violating Service Level Agreements (SLAs).</p>
-                                <p class="mt-2 text-sm text-purple-700 bg-purple-100 p-2 rounded"><em>"354 requests breached the 2000ms threshold."</em></p>
+                             <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/52Xgc5Y1/6-Success-Failure.png" alt="Biểu đồ Xu hướng Thành công và Thất bại" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">5. Xu hướng Thành công và Thất bại</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> So sánh số lượng yêu cầu thành công (vùng màu xanh) với yêu cầu thất bại (đường màu đỏ) theo thời gian. Dữ liệu cho thấy trong khi hầu hết các yêu cầu đều thành công, có những đột biến lỗi nhỏ và liên tục trong suốt quá trình kiểm tra.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Đây là báo cáo chất lượng của một nhà máy. Biểu đồ cho thấy nhà máy chủ yếu sản xuất các sản phẩm tốt (vùng màu xanh lớn), nhưng mỗi giờ, một vài sản phẩm bị lỗi (các đột biến màu đỏ nhỏ) được tạo ra. Nó cho chúng ta biết vấn đề là nhỏ nhưng liên tục.</p>
+                                </div>
                             </div>
                         </div>
-                    `
-                },
-                {
-                    title: '📈 Interactive Charts',
-                    id: 'charts',
-                    content: `
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Deep Dive: Interactive Charts</h2>
-                        <p class="mb-6 text-gray-700">Each chart offers visual insight and allows for saving images or maximizing views for detailed analysis. Here's what each chart tells you:</p>
-                        <div class="space-y-8">
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-900">1. Response Time Over Time</h3>
-                                <p class="mt-2 text-gray-600">A line chart showing sample times across the test timeline, grouped by label. It's perfect for spotting spikes or performance degradation over the duration of the test.</p>
-                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "A significant spike occurred at 14:23:02 with a response time of 22,919ms for 'Staff and Deployment: Detail'."</p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-900">2. Throughput (Requests/sec)</h3>
-                                <p class="mt-2 text-gray-600">Shows the number of requests your system handled per second. Plateaus in this chart can suggest that the server has saturated its capacity or hit a bottleneck.</p>
-                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "Throughput plateaued at 57 req/s, suggesting the server may have reached its limit."</p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-900">3. 90th/95th Percentiles by Label</h3>
-                                <p class="mt-2 text-gray-600">A bar chart showing response time percentiles for each API label. Percentiles offer a more realistic view of user experience than simple averages because they ignore outlier extremes.</p>
-                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "'Invoice List: Summary' had a 95th percentile at 4,800ms, indicating long-tail performance concerns."</p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-900">4. Error Distribution</h3>
-                                <p class="mt-2 text-gray-600">A horizontal bar chart that displays the number of errors per label. This immediately pinpoints which endpoints or functions are the most error-prone.</p>
-                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "All 258 errors were from 'Invoice List: Preview Detail', likely indicating internal server failures."</p>
-                            </div>
-                             <div>
-                                <h3 class="text-xl font-semibold text-gray-900">5. Success vs. Failure Trend</h3>
-                                <p class="mt-2 text-gray-600">A time-series chart that plots successful requests against failed requests per second. It's great for highlighting if failure rates increase during specific load periods.</p>
-                                <p class="mt-2 text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">🔍 <strong>Example:</strong> "Between 14:25 and 14:30, failure rates spiked significantly as the load ramped up."</p>
-                            </div>
-                        </div>
-                    `
-                },
-                {
-                    title: '🧾 Raw Data Table',
-                    id: 'raw-data',
-                    content: `
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Viewing Raw Data: Detailed Table</h2>
-                        <p class="mb-6 text-gray-700">For the most granular analysis, scroll to the <strong>Detailed Data</strong> section in the tool to view every single request. The table includes pagination and helpful color-coding.</p>
-                        
-                        <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
-                            <h3 class="font-semibold text-lg text-gray-900 mb-3">Table Columns</h3>
-                            <ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-gray-700">
-                                <li>Start Time</li>
-                                <li>Thread Name</li>
-                                <li>Label</li>
-                                <li>Sample Time (ms)</li>
-                                <li>Status</li>
-                                <li>Bytes</li>
-                                <li>Sent Bytes</li>
-                                <li>Latency</li>
-                                <li>Connect Time</li>
-                            </ul>
-                        </div>
-
-                        <div class="mt-6">
-                            <h3 class="font-semibold text-lg text-gray-900 mb-3">Key Features</h3>
-                             <ul class="space-y-3">
-                                <li class="flex items-start">
-                                    <span class="text-red-500 mr-3 text-2xl">❌</span>
-                                    <div><strong class="text-red-600">Red Rows for Failures:</strong> Failed requests are highlighted in red for immediate identification.</div>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-yellow-500 mr-3 text-2xl">⚠️</span>
-                                    <div><strong class="text-yellow-600">Yellow Rows for Breaches:</strong> Requests that exceed your response time threshold are marked in yellow.</div>
-                                </li>
-                                <li class="flex items-start">
-                                    <span class="text-blue-500 mr-3 text-2xl">📄</span>
-                                    <div><strong>Pagination:</strong> Data is neatly organized into pages (e.g., 20 rows/page) for easy browsing.</div>
-                                </li>
-                            </ul>
-                        </div>
-                    `
-                },
-                {
-                    title: '📤 Exporting & Tips',
-                    id: 'exporting-tips',
-                    content: `
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Exporting Reports & Getting Tips</h2>
-                        <p class="mb-6 text-gray-700">Share your findings easily or get automated insights from our Assistant.</p>
-                        
-                        <div class="space-y-8">
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-900">1. Export PDF Report</h3>
-                                <p class="mt-2 text-gray-600">Click the <strong>"Export PDF"</strong> button to download a comprehensive, printable PDF. This report includes all summary metrics and charts, making it perfect for sharing with stakeholders.</p>
-                            </div>
-                            <div>
-                                <h3 class="text-xl font-semibold text-gray-900">2. Download Filtered CSV</h3>
-                                <p class="mt-2 text-gray-600">Click <strong>"Download CSV"</strong> to get a CSV file of the data currently displayed in the table. This is useful for external analysis, archiving raw metrics, or custom reporting.</p>
-                            </div>
-                            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
-                                <h3 class="text-xl font-semibold text-green-800">💡 Assistant Guidance</h3>
-                                <p class="mt-2 text-gray-700">If the <strong>"Show Assistant Tips"</strong> toggle is enabled, the tool will provide helpful, context-aware insights below key charts. These tips automatically highlight important findings like response spikes, error surges, or performance bottlenecks based on your uploaded data.</p>
-                            </div>
-                        </div>
-                    `
+                    `,
+                    "raw-data_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Giải thích Bảng Dữ liệu Chi tiết</h2><p class="mb-6 text-gray-700">Bảng <strong>Dữ liệu Chi tiết</strong>, sẽ xuất hiện trong một báo cáo đầy đủ, cung cấp phân tích chi tiết nhất bằng cách liệt kê từng yêu cầu một. Bảng bao gồm phân trang và mã màu hữu ích để có cái nhìn nhanh.</p><div class="bg-gray-50 p-5 rounded-lg border border-gray-200"><h3 class="font-semibold text-lg text-gray-900 mb-3">Giải thích các Cột của Bảng</h3><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-gray-700"><li><strong>Thời gian Bắt đầu:</strong> Khi yêu cầu được khởi tạo.</li><li><strong>Tên Luồng:</strong> Luồng người dùng ảo đã gửi yêu cầu.</li><li><strong>Nhãn:</strong> Tên của yêu cầu hoặc giao dịch cụ thể.</li><li><strong>Thời gian Mẫu (ms):</strong> Tổng thời gian thực hiện yêu cầu (từ đầu đến cuối).</li><li><strong>Trạng thái:</strong> Yêu cầu 'Thành công' hay 'Thất bại'.</li><li><strong>Bytes:</strong> Kích thước dữ liệu phản hồi tính bằng byte.</li><li><strong>Bytes đã gửi:</strong> Kích thước dữ liệu được gửi trong yêu cầu.</li><li><strong>Độ trễ:</strong> Thời gian đến byte đầu tiên của phản hồi.</li><li><strong>Thời gian Kết nối:</strong> Thời gian cần thiết để thiết lập kết nối với máy chủ.</li></ul></div><div class="mt-6"><h3 class="font-semibold text-lg text-gray-900 mb-3">Các Tính năng Chính</h3><ul class="space-y-3"><li class="flex items-start"><span class="text-red-500 mr-3 text-2xl">❌</span><div><strong class="text-red-600">Các hàng màu đỏ cho Lỗi:</strong> Các yêu cầu không thành công được tô màu đỏ để nhận dạng ngay lập tức.</div></li><li class="flex items-start"><span class="text-yellow-500 mr-3 text-2xl">⚠️</span><div><strong class="text-yellow-600">Các hàng màu vàng cho Vi phạm:</strong> Các yêu cầu vượt quá ngưỡng thời gian phản hồi của bạn được đánh dấu bằng màu vàng.</div></li><li class="flex items-start"><span class="text-blue-500 mr-3 text-2xl">📄</span><div><strong>Phân trang:</strong> Dữ liệu được sắp xếp gọn gàng thành các trang để dễ dàng duyệt.</div></li></ul></div>`,
+                    "exporting-tips_content": `<h2 class="text-2xl font-bold text-gray-800 mb-6">Xuất Báo cáo & Nhận Mẹo</h2><p class="mb-6 text-gray-700">Chia sẻ kết quả của bạn một cách dễ dàng hoặc nhận thông tin chi tiết tự động từ Trợ lý của chúng tôi.</p><div class="space-y-8"><div><h3 class="text-xl font-semibold text-gray-900">1. Xuất Báo cáo PDF</h3><p class="mt-2 text-gray-600">Nhấp vào nút <strong>"Xuất PDF"</strong> để tải xuống một tệp PDF toàn diện, có thể in được. Báo cáo này bao gồm tất cả các số liệu tóm tắt và biểu đồ, làm cho nó hoàn hảo để chia sẻ với các bên liên quan.</p></div><div><h3 class="text-xl font-semibold text-gray-900">2. Tải xuống CSV đã lọc</h3><p class="mt-2 text-gray-600">Nhấp vào <strong>"Tải xuống CSV"</strong> để nhận tệp CSV của dữ liệu hiện đang được hiển thị trong bảng. Điều này hữu ích cho việc phân tích bên ngoài, lưu trữ các số liệu thô hoặc báo cáo tùy chỉnh.</p></div><div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg"><h3 class="text-xl font-semibold text-green-800">💡 Hướng dẫn của Trợ lý</h3><p class="mt-2 text-gray-700">Nếu nút gạt <strong>"Hiển thị Mẹo của Trợ lý"</strong> được bật, công cụ sẽ cung cấp các thông tin chi tiết hữu ích, theo ngữ cảnh bên dưới các biểu đồ chính. Các mẹo này tự động làm nổi bật các phát hiện quan trọng như đột biến phản hồi, sự gia tăng lỗi hoặc các điểm nghẽn hiệu suất dựa trên dữ liệu bạn đã tải lên.</p></div></div>`
                 }
+            };
+
+            let currentLang = 'en';
+            let quoteInterval;
+
+            function setLanguage(lang) {
+                currentLang = lang;
+                document.querySelectorAll('[data-lang-key]').forEach(el => {
+                    const key = el.dataset.langKey;
+                    if (translations[lang][key]) {
+                        el.innerHTML = translations[lang][key];
+                    }
+                });
+
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    const tabId = button.dataset.tab;
+                    if (tabId === 'introduction') button.innerHTML = translations[lang].tab_intro;
+                    if (tabId === 'dashboard') button.innerHTML = translations[lang].tab_dashboard;
+                    if (tabId === 'raw-data') button.innerHTML = translations[lang].tab_raw;
+                    if (tabId === 'exporting-tips') button.innerHTML = translations[lang].tab_export;
+                });
+                
+                document.querySelectorAll('.tab-content').forEach(contentDiv => {
+                    const contentKey = `${contentDiv.id}_content`;
+                    if(translations[lang][contentKey]) {
+                        contentDiv.innerHTML = translations[lang][contentKey];
+                    }
+                });
+
+                updateGreeting(lang);
+                updateFooter(lang);
+
+                document.getElementById('lang-en').classList.toggle('lang-btn-active', lang === 'en');
+                document.getElementById('lang-vn').classList.toggle('lang-btn-active', lang === 'vn');
+            }
+
+            function updateGreeting(lang) {
+                const hour = new Date().getHours();
+                let greetingKey = 'greeting_evening';
+                if (hour < 12) greetingKey = 'greeting_morning';
+                else if (hour < 18) greetingKey = 'greeting_afternoon';
+                
+                const greetingText = translations[lang][greetingKey];
+                const suffixText = translations[lang].greeting_suffix;
+                document.getElementById('contextual-greeting').innerHTML = `${greetingText} ${suffixText}`;
+            }
+
+            function updateFooter(lang) {
+                const footer = document.getElementById('footer');
+                const quotes = translations[lang].quotes;
+                let quoteIndex = 0;
+                
+                footer.innerHTML = `<p id="footer-quote" class="text-base text-gray-600">${quotes[0]}</p><p class="mt-2">${translations[lang].footer_copyright}</p>`;
+                const quoteElement = document.getElementById('footer-quote');
+
+                if (quoteInterval) clearInterval(quoteInterval);
+                quoteInterval = setInterval(() => {
+                    quoteIndex = (quoteIndex + 1) % quotes.length;
+                    quoteElement.style.opacity = 0;
+                    setTimeout(() => {
+                        quoteElement.innerText = quotes[quoteIndex];
+                        quoteElement.style.opacity = 1;
+                    }, 500);
+                }, 4000);
+            }
+
+            // --- Initial Setup ---
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                bootScreen.style.opacity = '0';
+                setTimeout(() => bootScreen.style.display = 'none', 1000);
+            }, 1500);
+            
+            const tabData = [
+                { id: 'introduction' }, 
+                { id: 'dashboard' },
+                { id: 'raw-data' },
+                { id: 'exporting-tips' }
             ];
 
             const tabNav = document.getElementById('tab-nav');
             const contentArea = document.getElementById('tab-content-area');
+            const tabBackgrounds = {
+                introduction: 'bg-blue-50', 
+                dashboard: 'bg-indigo-50', 
+                'raw-data': 'bg-red-50', 
+                'exporting-tips': 'bg-purple-50'
+            };
 
-            // Generate tabs and content containers
             tabData.forEach((tab, index) => {
-                // Create tab button
                 const tabButton = document.createElement('a');
                 tabButton.href = '#';
-                tabButton.innerHTML = tab.title;
-                tabButton.className = `tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-blue-600 hover:border-blue-300 ${index === 0 ? 'tab-active' : ''}`;
+                tabButton.className = `tab-button animate-bounce-on-hover whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-gray-500 hover:text-blue-600 hover:border-blue-300 ${index === 0 ? 'tab-active' : ''}`;
                 tabButton.dataset.tab = tab.id;
                 tabNav.appendChild(tabButton);
 
-                // Create content div
                 const contentDiv = document.createElement('div');
                 contentDiv.id = tab.id;
                 contentDiv.className = `tab-content ${index !== 0 ? 'hidden' : ''}`;
-                contentDiv.innerHTML = tab.content;
                 contentArea.appendChild(contentDiv);
             });
-
-            // Tab switching logic
+            
             tabNav.addEventListener('click', (e) => {
                 e.preventDefault();
                 const clickedTab = e.target.closest('.tab-button');
-                if (!clickedTab) return;
+                if (!clickedTab || clickedTab.classList.contains('tab-active')) return;
 
                 const tabId = clickedTab.dataset.tab;
 
-                // Update active tab styles
-                document.querySelectorAll('.tab-button').forEach(button => {
-                    button.classList.remove('tab-active');
-                });
+                document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('tab-active'));
                 clickedTab.classList.add('tab-active');
-
-                // Show/hide content
+                document.body.className = 'text-gray-800 ' + (tabBackgrounds[tabId] || 'bg-gray-50');
+                
+                contentArea.classList.remove('animate-fadeIn');
+                void contentArea.offsetWidth;
+                contentArea.classList.add('animate-fadeIn');
+                
                 document.querySelectorAll('.tab-content').forEach(content => {
-                    if (content.id === tabId) {
-                        content.classList.remove('hidden');
-                        content.style.opacity = 0;
-                        setTimeout(() => content.style.opacity = 1, 50);
-                    } else {
-                        content.classList.add('hidden');
-                        content.style.opacity = 0;
-                    }
+                    content.classList.toggle('hidden', content.id !== tabId);
                 });
             });
+
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+            document.getElementById('lang-vn').addEventListener('click', () => setLanguage('vn'));
+
+            setLanguage('en');
+            document.body.className = 'text-gray-800 ' + (tabBackgrounds['introduction'] || 'bg-gray-50');
+            contentArea.classList.add('animate-fadeIn');
+            document.getElementById('introduction').classList.remove('hidden');
         });
     </script>
 
