@@ -3,1615 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Performance Analysis Dashboard Tool</title>
+    <title>Performance Analysis Dashboard Tool — User Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        html {
-            scroll-behavior: smooth;
-        }
         body {
             font-family: 'Inter', sans-serif;
-            transition: background 1s ease-in-out;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            transition: background-color 0.5s ease;
         }
-        .container {
-            flex-grow: 1;
+        .tab-active {
+            border-bottom-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
         }
-        #bg-video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -2;
-            filter: blur(2px) brightness(0.7);
-        }
-        #bg-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0, 0, 0, 0.4);
-            transition: background-color 1s ease-in-out;
-            z-index: -1;
-        }
-        .chart-container {
-            position: relative;
-            margin: auto;
-            height: 45vh;
-            width: 100%;
-        }
-        .error-row {
-            background-color: #fee2e2; /* red-100 */
-        }
-        .error-row:hover {
-            background-color: #fecaca; /* red-200 */
-        }
-        .threshold-exceeded-row {
-            background-color: #fef9c3; /* yellow-100 */
-        }
-        .threshold-exceeded-row:hover {
-            background-color: #fef08a; /* yellow-200 */
-        }
-        .summary-card {
-            transition: all 0.3s ease-in-out;
-            animation: fadeIn 0.5s ease-in-out;
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-        .summary-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .content-card {
-             background-color: rgba(255, 255, 255, 0.9);
-        }
-        .assistant-tip {
-            background-color: #e0f2fe; /* light-blue-100 */
-            border-left: 4px solid #0ea5e9; /* sky-500 */
-            padding: 0.75rem;
-            margin-top: 1rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-            color: #0c4a6e; /* sky-800 */
+        .lang-btn-active {
+            background-color: #3b82f6;
+            color: white;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-in-out;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
         }
-        /* Timeline Slider Styles */
-        #timeline-slider {
-            -webkit-appearance: none;
+        .animate-bounce-on-hover:hover .bouncer {
+          animation: bounce 1s infinite;
+        }
+        #footer-quote {
+            transition: opacity 0.5s ease-in-out;
+        }
+        .clarity-img { 
+            max-width: 680px;
             width: 100%;
-            height: 8px;
-            background: #ddd; /* Fallback */
-            outline: none;
-            opacity: 0.7;
-            -webkit-transition: .2s;
-            transition: opacity .2s, background .1s linear;
-            border-radius: 5px;
+            height: auto;
+            image-rendering: auto;
+            -ms-interpolation-mode: bicubic;
         }
-        #timeline-slider:hover {
-            opacity: 1;
+        .chart-block img.clarity-img { 
+            object-fit: contain; 
         }
-        #timeline-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #0ea5e9; /* sky-500 */
-            cursor: pointer;
-            border-radius: 50%;
-        }
-        #timeline-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #0ea5e9; /* sky-500 */
-            cursor: pointer;
-            border-radius: 50%;
-        }
-        .rotate-180 {
-            transform: rotate(180deg);
+        @media (min-width: 1024px) {
+          .clarity-img { max-height: 420px; }
         }
     </style>
 </head>
-<body class="text-gray-200">
+<body class="bg-gray-50 text-gray-800">
 
-    <video id="bg-video" autoplay loop muted playsinline>
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-container-ship-sailing-in-the-ocean-3563-large.mp4" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
-    <div id="bg-overlay"></div>
-    
-    <div class="fixed top-4 right-4 z-50">
-        <select id="language-selector" class="bg-white text-gray-800 rounded-md shadow-lg p-2">
-            <option value="en">English</option>
-            <option value="vi">Tiếng Việt</option>
-        </select>
+    <!-- Startup Boot Animation -->
+    <div id="boot-screen" class="fixed inset-0 bg-white flex items-center justify-center text-xl font-bold z-50 transition-opacity duration-1000 ease-out opacity-100">
+        <p data-lang-key="boot_message">Initializing Dashboard Engine...</p>
     </div>
 
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8 relative z-10">
-        <header class="text-center mb-8 pt-16">
-            <h1 class="text-3xl sm:text-4xl font-bold text-white" data-translate-key="dashboardTitle">Performance Analysis Dashboard Tool</h1>
-            <p class="text-md text-gray-300 mt-2" data-translate-key="dashboardSubtitle">Upload a results file (.jmx, .csv, .json) to explore performance data.</p>
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
+        <!-- Header with Language Switcher -->
+        <header id="main-header" class="relative text-center mb-8 bg-fixed bg-gradient-to-r from-blue-50 to-white py-12 rounded-xl">
+            <div class="absolute top-4 right-4">
+                <div class="flex space-x-1 border border-gray-300 rounded-lg p-1">
+                    <button id="lang-en" class="lang-btn px-3 py-1 text-sm font-medium rounded-md transition-colors lang-btn-active">EN</button>
+                    <button id="lang-vn" class="lang-btn px-3 py-1 text-sm font-medium rounded-md transition-colors">VN</button>
+                </div>
+            </div>
+            <h1 data-lang-key="main_title" class="text-3xl sm:text-4xl font-bold text-gray-900 hover:scale-105 transform transition duration-300 ease-out">
+                Performance Analysis Dashboard Tool
+            </h1>
+            <p id="contextual-greeting" class="text-blue-600 mt-2 text-lg"></p>
         </header>
 
-        <!-- Collapsible Setup & Filters Section -->
-        <div id="main-controls-container" class="max-w-5xl mx-auto mb-8">
-            <div id="main-controls-header" class="flex justify-between items-center p-4 bg-gray-800 bg-opacity-50 rounded-lg cursor-pointer">
-                <h2 class="text-xl font-semibold text-white" data-translate-key="setupAndFiltersTitle">Setup, Filters & Export</h2>
-                <svg id="main-controls-arrow" class="w-6 h-6 text-white transition-transform transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
-            <div id="main-controls-content" class="pt-4">
-                <!-- Main Action Section -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center mb-8">
-                    <!-- File Upload Section -->
-                    <div class="content-card rounded-lg shadow-md p-6 border border-gray-700">
-                        <label for="file-upload-label" class="block text-lg font-semibold text-gray-800 mb-2" data-translate-key="uploadTitle">Upload Results File(s)</label>
-                        <div class="flex items-center justify-center w-full">
-                            <label id="file-upload-label" for="file-upload" class="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-400 border-dashed rounded-lg cursor-pointer bg-gray-200 hover:bg-gray-300 transition">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <svg class="w-10 h-10 mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                    <p class="mb-2 text-sm text-gray-600"><span class="font-semibold" data-translate-key="clickToUpload">Click to upload</span> <span data-translate-key="orDragAndDrop">or drag and drop</span></p>
-                                    <p class="text-xs text-gray-600" data-translate-key="supportedFiles">Supports .jmx, .csv, .json files</p>
-                                </div>
-                                <input id="file-upload" type="file" class="hidden" accept=".jmx,.csv,.json" multiple />
-                            </label>
-                        </div>
-                        <p id="file-name" class="mt-4 text-center text-sm text-gray-700"></p>
-                    </div>
-                    <!-- Understand Chart Button Section -->
-                    <div class="content-card text-center p-6 rounded-lg shadow-md border border-gray-700 flex flex-col items-center justify-center h-full">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4" data-translate-key="helpTitle">Need help reading the charts?</h3>
-                        <p class="text-gray-700 mb-6 text-center" data-translate-key="helpSubtitle">Click the button below for a detailed guide on how to interpret the performance data.</p>
-                        <button id="understand-chart-btn" class="bg-teal-500 text-white font-bold py-4 px-8 rounded-lg shadow-lg hover:bg-teal-600 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500" data-translate-key="understandChartsBtn">
-                            Understand The Charts
-                        </button>
-                    </div>
-                </div>
-                <!-- Filters Section -->
-                <div id="filters-section" class="content-card rounded-lg shadow-md p-6 border border-gray-700 hidden">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-900" data-translate-key="filtersTitle">Data Filters & Export</h2>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
-                            <div>
-                                <label for="label-filter" class="block text-sm font-medium text-gray-900" data-translate-key="filterByLabel">Filter by Label</label>
-                                <select id="label-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-900"></select>
-                            </div>
-                            <div>
-                                <label for="status-filter" class="block text-sm font-medium text-gray-900" data-translate-key="filterByStatus">Filter by Status</label>
-                                <select id="status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-900">
-                                    <option value="all" data-translate-key="statusAll">All</option>
-                                    <option value="true" data-translate-key="statusSuccess">Success</option>
-                                    <option value="false" data-translate-key="statusFailure">Failure</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="threshold-input" class="block text-sm font-medium text-gray-900" data-translate-key="responseTimeThreshold">Threshold (ms)</label>
-                                <input type="number" id="threshold-input" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-900" placeholder="e.g., 2000">
-                            </div>
-                            <div>
-                                <button id="apply-filters-btn" class="w-full bg-indigo-600 text-white py-3 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 font-semibold" data-translate-key="applyBtn">Apply</button>
-                            </div>
-                            <div class="flex justify-center pb-2">
-                                <div class="flex items-center">
-                                    <input type="checkbox" id="toggle-tips" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" checked>
-                                    <label for="toggle-tips" class="ml-2 text-sm font-medium text-gray-900" data-translate-key="showAssistantTips">Show Assistant Tips</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <button id="export-pdf-btn" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" data-translate-key="exportPdfBtn">Export PDF</button>
-                            <button id="tsb-analysis-btn" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500" data-translate-key="tsbAnalysisBtn">✨ Analyze with TSB</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Replay Timeline Section -->
-        <div id="timeline-container" class="max-w-5xl mx-auto content-card rounded-lg shadow-md p-6 border border-gray-700 mb-8 hidden">
-             <div class="flex justify-between items-center mb-2">
-                <label for="timeline-slider" class="text-lg font-semibold text-gray-900" data-translate-key="replayTimelineTitle">Replay Timeline</label>
-                <span id="timeline-label" class="text-sm font-mono text-gray-700"></span>
-            </div>
-            <input type="range" id="timeline-slider" min="0" max="100" value="100">
-        </div>
-
-        <!-- Data Display Section -->
-        <div id="dashboard-content" class="mt-10 hidden">
-            <!-- Performance Summary Cards -->
-            <div id="summary-stats" class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center mb-8"></div>
-
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 gap-8 mb-8 text-gray-800">
-                <div class="content-card rounded-lg shadow-md p-6 border border-gray-700">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-center" data-translate-key="responseTimeChartTitle">Response Time Over Time (by Label)</h2>
-                        <button onclick="downloadChart('response-time-over-time-chart', 'response-time-over-time.png')" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 text-sm" data-translate-key="savePngBtn">Save PNG</button>
-                    </div>
-                    <div id="response-time-tip" class="assistant-tip"></div>
-                    <div class="chart-container"><canvas id="response-time-over-time-chart"></canvas></div>
-                </div>
-                <div class="content-card rounded-lg shadow-md p-6 border border-gray-700">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-center" data-translate-key="throughputChartTitle">Throughput (Requests/sec)</h2>
-                        <button onclick="downloadChart('throughput-chart', 'throughput.png')" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 text-sm" data-translate-key="savePngBtn">Save PNG</button>
-                    </div>
-                     <div id="throughput-tip" class="assistant-tip"></div>
-                    <div class="chart-container"><canvas id="throughput-chart"></canvas></div>
-                </div>
-                 <div class="content-card rounded-lg shadow-md p-6 border border-gray-700">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-center" data-translate-key="percentilesChartTitle">90th/95th Percentiles by Label</h2>
-                        <button onclick="downloadChart('percentile-chart', 'percentiles.png')" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 text-sm" data-translate-key="savePngBtn">Save PNG</button>
-                    </div>
-                     <div id="percentile-tip" class="assistant-tip"></div>
-                    <div class="chart-container"><canvas id="percentile-chart"></canvas></div>
-                </div>
-                 <div class="content-card rounded-lg shadow-md p-6 border border-gray-700">
-                    <div class="flex justify-between items-center mb-4 w-full">
-                        <h2 class="text-xl font-semibold text-center" data-translate-key="errorDistributionChartTitle">Error Distribution by Label</h2>
-                        <button onclick="downloadChart('error-rate-chart', 'error-distribution.png')" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 text-sm" data-translate-key="savePngBtn">Save PNG</button>
-                    </div>
-                    <div id="error-rate-tip" class="assistant-tip"></div>
-                    <div class="chart-container"><canvas id="error-rate-chart"></canvas></div>
-                </div>
-                 <div class="content-card rounded-lg shadow-md p-6 border border-gray-700">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold text-center" data-translate-key="successFailTrendChartTitle">Success vs. Failure Trend</h2>
-                        <button onclick="downloadChart('success-fail-trend-chart', 'success-fail-trend.png')" class="bg-blue-600 text-white py-1 px-3 rounded-md hover:bg-blue-700 text-sm" data-translate-key="savePngBtn">Save PNG</button>
-                    </div>
-                    <div id="success-fail-trend-tip" class="assistant-tip"></div>
-                    <div class="chart-container"><canvas id="success-fail-trend-chart"></canvas></div>
-                </div>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Tab Navigation -->
+            <div class="border-b border-gray-200">
+                <nav id="tab-nav" class="flex flex-wrap -mb-px px-4 sm:px-6" aria-label="Tabs">
+                    <!-- Tabs will be inserted here by JavaScript -->
+                </nav>
             </div>
 
-            <!-- Collapsible Detailed Table Section -->
-            <div class="content-card rounded-lg shadow-md border border-gray-700 overflow-hidden text-gray-800">
-                 <div id="detailed-data-header" class="flex justify-between items-center p-6 cursor-pointer">
-                    <h2 class="text-2xl font-semibold" data-translate-key="detailedDataTitle">Detailed Data</h2>
-                    <div class="flex items-center">
-                        <button id="download-csv-btn" class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 text-sm mr-4" data-translate-key="downloadCsvBtn">Download CSV</button>
-                        <svg id="detailed-data-arrow" class="w-6 h-6 text-gray-800 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                </div>
-                <div id="detailed-data-content" class="hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableStartTime">Start Time</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableThreadName">Thread Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableLabel">Label</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableSampleTime">Sample Time (ms)</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableStatus">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableBytes">Bytes</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableSentBytes">Sent Bytes</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableLatency">Latency</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableConnectTime">Connect Time (ms)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
-                        </table>
-                    </div>
-                    <div id="pagination-controls" class="px-6 py-3 flex items-center justify-between border-t border-gray-200"></div>
-                </div>
+            <!-- Tab Content Area -->
+            <div id="tab-content-area" class="p-6 sm:p-8">
+                <!-- Content will be inserted here by JavaScript -->
             </div>
         </div>
-        <div id="no-data-message" class="text-center mt-10 p-6 content-card rounded-lg shadow-md border border-gray-700 hidden">
-            <p class="text-gray-600" data-translate-key="noDataMessage">No valid data found in the uploaded file.</p>
-        </div>
 
-        <!-- Start Over Button -->
-        <div id="start-over-container" class="text-center mt-10 hidden">
-            <button id="start-over-btn" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-gray-600 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" data-translate-key="startOverBtn">
-                Start Over
-            </button>
-        </div>
+        <!-- Footer with rotating quote -->
+        <footer id="footer" class="text-center mt-8 text-gray-500 text-sm">
+            <!-- Rotating quote and copyright will be inserted here -->
+        </footer>
     </div>
-
-    <!-- Go to Top Button -->
-    <button id="go-to-top-btn" class="fixed bottom-8 right-8 bg-sky-500 text-white p-3 rounded-full shadow-lg hover:bg-sky-600 transition hidden" data-translate-key="goToTopBtn" title="Go to top">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-        </svg>
-    </button>
-
-    <!-- Modal for Maximized Chart -->
-    <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full h-full max-w-6xl max-h-[90vh] relative">
-            <button id="close-modal-btn" class="absolute top-2 right-4 text-gray-600 hover:text-gray-900 text-3xl font-bold">&times;</button>
-            <canvas id="maximized-chart-canvas"></canvas>
-        </div>
-    </div>
-
-     <!-- Modal for Threshold Breaches -->
-    <div id="threshold-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] relative flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-800" data-translate-key="thresholdBreachesTitle">Threshold Breaches</h2>
-                <button id="close-threshold-modal-btn" class="text-gray-600 hover:text-gray-900 text-3xl font-bold">&times;</button>
-            </div>
-            <div class="overflow-y-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableStartTime">Start Time</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableLabel">Label</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" data-translate-key="tableSampleTime">Sample Time (ms)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="threshold-table-body" class="bg-white divide-y divide-gray-200"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal for TSB Insights -->
-    <div id="tsb-insights-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] relative flex flex-col text-gray-800">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold" data-translate-key="tsbAnalysisTitle">✨ Analyze with TSB</h2>
-                <button id="close-tsb-modal-btn" class="text-gray-600 hover:text-gray-900 text-3xl font-bold">&times;</button>
-            </div>
-            <div id="tsb-insights-content" class="overflow-y-auto flex-grow">
-                <!-- TSB insights will be loaded here -->
-            </div>
-            <div id="tsb-loader" class="flex justify-center items-center h-full">
-                <div class="loader"></div>
-            </div>
-            <div id="tsb-modal-footer" class="mt-4 pt-4 border-t border-gray-200 flex justify-end items-center hidden">
-                 <p class="text-sm text-gray-600 text-left mr-auto" data-translate-key="copyInstructions">Click the button to copy the report and open a new Google Doc for pasting.</p>
-                 <button id="listen-tsb-report-btn" class="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-sky-600 transition mr-4 hidden" data-translate-key="listenBtn">🔊 Listen</button>
-                 <button id="export-doc-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition" data-translate-key="exportDocBtn">
-                    Copy for Google Docs
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <footer class="text-center p-4 mt-auto relative z-10 text-white">
-        <img src="https://i.postimg.cc/zDwJHp1G/TSB-VIETNAM-80px.png" alt="Logo" class="mx-auto mb-4 w-[35rem]">
-        <p id="footer-quote" class="italic text-sm mb-2"></p>
-        <p id="footer-copyright" class="text-xs"></p>
-    </footer>
-
 
     <script>
-        // --- GLOBAL STATE & CONFIG ---
-        const fileUpload = document.getElementById('file-upload');
-        const fileUploadLabel = document.getElementById('file-upload-label');
-        const fileNameDisplay = document.getElementById('file-name');
-        const dashboardContent = document.getElementById('dashboard-content');
-        const noDataMessage = document.getElementById('no-data-message');
-        const mainControlsContainer = document.getElementById('main-controls-container');
-        const mainControlsHeader = document.getElementById('main-controls-header');
-        const mainControlsContent = document.getElementById('main-controls-content');
-        const mainControlsArrow = document.getElementById('main-controls-arrow');
-        const filtersSection = document.getElementById('filters-section');
-        const applyFiltersBtn = document.getElementById('apply-filters-btn');
-        const downloadCsvBtn = document.getElementById('download-csv-btn');
-        const understandChartBtn = document.getElementById('understand-chart-btn');
-        const chartModal = document.getElementById('chart-modal');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const maximizedChartCanvas = document.getElementById('maximized-chart-canvas');
-        const exportPdfBtn = document.getElementById('export-pdf-btn');
-        const toggleTipsCheckbox = document.getElementById('toggle-tips');
-        const thresholdModal = document.getElementById('threshold-modal');
-        const closeThresholdModalBtn = document.getElementById('close-threshold-modal-btn');
-        const summaryStatsContainer = document.getElementById('summary-stats');
-        const tsbAnalysisBtn = document.getElementById('tsb-analysis-btn');
-        const tsbInsightsModal = document.getElementById('tsb-insights-modal');
-        const closeTsbModalBtn = document.getElementById('close-tsb-modal-btn');
-        const tsbInsightsContent = document.getElementById('tsb-insights-content');
-        const tsbLoader = document.getElementById('tsb-loader');
-        const languageSelector = document.getElementById('language-selector');
-        const exportDocBtn = document.getElementById('export-doc-btn');
-        const tsbModalFooter = document.getElementById('tsb-modal-footer');
-        const bgOverlay = document.getElementById('bg-overlay');
-        const timelineContainer = document.getElementById('timeline-container');
-        const timelineSlider = document.getElementById('timeline-slider');
-        const timelineLabel = document.getElementById('timeline-label');
-        const listenTsbReportBtn = document.getElementById('listen-tsb-report-btn');
-        const detailedDataHeader = document.getElementById('detailed-data-header');
-        const detailedDataContent = document.getElementById('detailed-data-content');
-        const detailedDataArrow = document.getElementById('detailed-data-arrow');
-        const startOverContainer = document.getElementById('start-over-container');
-        const startOverBtn = document.getElementById('start-over-btn');
-        const goToTopBtn = document.getElementById('go-to-top-btn');
-
-        let allData = [];
-        let filteredData = [];
-        let charts = {};
-        let maximizedChart;
-        let currentPage = 1;
-        const rowsPerPage = 20;
-        let currentLang = 'en';
-        let quoteInterval;
-
-        // --- EVENT LISTENERS ---
-        fileUpload.addEventListener('change', (event) => {
-            const files = event.target.files;
-            if (files.length > 0) {
-                handleFile(files[0]); 
-            }
-        });
-
-        fileUploadLabel.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            fileUploadLabel.classList.add('bg-gray-300');
-        });
-
-        fileUploadLabel.addEventListener('dragleave', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            fileUploadLabel.classList.remove('bg-gray-300');
-        });
-
-        fileUploadLabel.addEventListener('drop', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            fileUploadLabel.classList.remove('bg-gray-300');
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
-        });
-
-        understandChartBtn.addEventListener('click', () => {
-            const docUrl = 'https://dashboardfor-performancetest-guide.vercel.app/';
-            window.open(docUrl, '_blank');
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            chartModal.classList.add('hidden');
-            if (maximizedChart) {
-                maximizedChart.destroy();
-            }
-        });
-        
-        closeThresholdModalBtn.addEventListener('click', () => {
-            thresholdModal.classList.add('hidden');
-        });
-
-        chartModal.addEventListener('click', (event) => {
-            if (event.target === chartModal) {
-                 chartModal.classList.add('hidden');
-                 if (maximizedChart) {
-                      maximizedChart.destroy();
-                 }
-            }
-        });
-        
-        thresholdModal.addEventListener('click', (event) => {
-            if (event.target === thresholdModal) {
-                 thresholdModal.classList.add('hidden');
-            }
-        });
-
-        exportPdfBtn.addEventListener('click', async () => {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            pdf.setFontSize(18);
-            pdf.text('Performance Analysis Report', 10, 15);
-
-            // --- Render Summary Stats as Text for Sharpness ---
-            const summaryCards = summaryStatsContainer.querySelectorAll('.summary-card');
-            let xPos = 10;
-            const yPos = 30;
-            const cardWidth = 55;
-            pdf.setFontSize(10);
-
-            summaryCards.forEach((card, index) => {
-                const title = card.querySelector('p:first-child').textContent;
-                const value = card.querySelector('p:last-child').textContent;
-                
-                pdf.text(title, xPos, yPos);
-                pdf.setFontSize(16);
-                pdf.text(value, xPos, yPos + 8);
-                pdf.setFontSize(10);
-                
-                xPos += cardWidth;
-            });
-
-            const chartElements = document.querySelectorAll('.chart-container canvas');
-            let y = 60; // Adjusted starting Y position
-
-            for (const canvas of chartElements) {
-                if (canvas.parentElement.parentElement.style.display !== 'none') {
-                    const imgData = canvas.toDataURL('image/png', 1.0);
-                    const chartHeight = 100;
-                    const chartWidth = 277;
-                    if (y + chartHeight > 200) {
-                        pdf.addPage();
-                        y = 10;
-                    }
-                    pdf.addImage(imgData, 'PNG', 10, y, chartWidth, chartHeight);
-                    y += chartHeight + 10;
-                }
-            }
-            pdf.save('performance_report.pdf');
-        });
-
-        toggleTipsCheckbox.addEventListener('change', (event) => {
-            const tips = document.querySelectorAll('.assistant-tip');
-            const isChecked = event.target.checked;
-            tips.forEach(tip => {
-                if (isChecked && tip.textContent) {
-                    tip.style.display = 'block';
-                } else {
-                    tip.style.display = 'none';
-                }
-            });
-        });
-
-        tsbAnalysisBtn.addEventListener('click', getTsbInsights);
-        closeTsbModalBtn.addEventListener('click', () => {
-            tsbInsightsModal.classList.add('hidden');
-            window.speechSynthesis.cancel(); // Stop speech when closing modal
-        });
-        
-        languageSelector.addEventListener('change', (event) => {
-            updateLanguage(event.target.value);
-            if (allData.length > 0) {
-                updateDashboard();
-            }
-        });
-        
-        exportDocBtn.addEventListener('click', () => {
-            const reportText = tsbInsightsContent.innerText;
-            const footerQuoteText = document.getElementById('footer-quote').innerText;
-            const footerCopyrightText = document.getElementById('footer-copyright').innerText;
-            const fullTextToCopy = `${reportText}\n\n---\n${footerQuoteText}\n${footerCopyrightText}`;
-            
-            const textArea = document.createElement("textarea");
-            textArea.value = fullTextToCopy;
-            
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed";
-
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-
-            let success = false;
-            try {
-                success = document.execCommand('copy');
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-            }
-
-            document.body.removeChild(textArea);
-
-            if (success) {
-                const originalText = exportDocBtn.textContent;
-                const copiedTextKey = currentLang === 'vi' ? 'copiedToClipboard' : 'copiedToClipboard';
-                exportDocBtn.textContent = translations[currentLang][copiedTextKey] || 'Copied!';
-                exportDocBtn.disabled = true;
-                
-                window.open('https://docs.new', '_blank');
-                
-                setTimeout(() => {
-                    exportDocBtn.textContent = originalText;
-                    exportDocBtn.disabled = false;
-                }, 3000);
-            } else {
-                alert('Failed to copy. Please manually copy the text.');
-            }
-        });
-
-        listenTsbReportBtn.addEventListener('click', playTsbReport);
-        timelineSlider.addEventListener('input', handleTimelineChange);
-        detailedDataHeader.addEventListener('click', () => {
-            detailedDataContent.classList.toggle('hidden');
-            detailedDataArrow.classList.toggle('rotate-180');
-        });
-        startOverBtn.addEventListener('click', () => window.location.reload());
-        goToTopBtn.addEventListener('click', () => window.scrollTo(0, 0));
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 300) {
-                goToTopBtn.classList.remove('hidden');
-            } else {
-                goToTopBtn.classList.add('hidden');
-            }
-        });
-
-        mainControlsHeader.addEventListener('click', toggleMainControls);
-        document.addEventListener('keydown', (event) => {
-            if (event.target.tagName.toLowerCase() === 'input') return; // Ignore keydown in input fields
-            if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                hideMainControls();
-            } else if (event.key === 'ArrowDown') {
-                event.preventDefault();
-                showMainControls();
-            }
-        });
-
-
-        function handleFile(file) {
-            fileNameDisplay.textContent = `Processing: ${file.name}...`;
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                const worker = new Worker(URL.createObjectURL(new Blob([`
-                    (${workerFunction.toString()})()
-                `], { type: 'application/javascript' })));
-
-                worker.onmessage = (event) => {
-                    if (event.data.error) {
-                        handleError(new Error(event.data.error));
-                    } else {
-                        allData = event.data.sort((a, b) => a.timestamp - b.timestamp);
-                        fileNameDisplay.textContent = `File: ${file.name}`;
-                        initializeDashboard();
-                    }
-                    worker.terminate();
-                };
-                
-                worker.postMessage({
-                    content: e.target.result,
-                    fileType: file.name.split('.').pop().toLowerCase()
-                });
-            };
-            reader.readAsText(file);
-        }
-        
-        function workerFunction() {
-            self.onmessage = function(event) {
-                const { content, fileType } = event.data;
-                try {
-                    let data;
-                    if (fileType === 'jmx') data = parseJMX(content);
-                    else if (fileType === 'csv') data = parseCSV(content);
-                    else if (fileType === 'json') data = parseJSON(content);
-                    else throw new Error('Unsupported file format.');
-                    
-                    if (data.length === 0) throw new Error('No sample data found.');
-                    
-                    self.postMessage(data);
-                } catch (e) {
-                    self.postMessage({ error: e.message });
-                }
-            };
-
-            function parseJMX(xmlContent) {
-                const sampleTags = [...xmlContent.matchAll(/<(httpSample|sample)\s+([^>]+)>/g)];
-                
-                return sampleTags.map(tagMatch => {
-                    const attributesString = tagMatch[2];
-                    const attributes = {};
-                    
-                    const attrRegex = /(\w+)="([^"]*)"/g;
-                    let attrMatch;
-                    while ((attrMatch = attrRegex.exec(attributesString)) !== null) {
-                        attributes[attrMatch[1]] = attrMatch[2];
-                    }
-                    
-                    return {
-                        label: attributes['lb'],
-                        sampleTime: parseInt(attributes['t'], 10),
-                        success: attributes['s'] === 'true',
-                        timestamp: parseInt(attributes['ts'], 10),
-                        threadName: attributes['tn'],
-                        bytes: parseInt(attributes['by'], 10),
-                        sentBytes: parseInt(attributes['sby'], 10),
-                        latency: parseInt(attributes['lt'], 10),
-                        connectTime: parseInt(attributes['ct'], 10),
-                    };
-                });
-            }
-
-            function parseCSV(csvContent) {
-                const lines = csvContent.trim().split('\n');
-                const header = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/"/g, ''));
-                const data = [];
-                
-                const labelIdx = header.indexOf('label');
-                const timeIdx = header.indexOf('elapsed');
-                const successIdx = header.indexOf('success');
-                const timeStampIdx = header.indexOf('timestamp');
-                const threadNameIdx = header.indexOf('threadname');
-                const bytesIdx = header.indexOf('bytes');
-                const sentBytesIdx = header.indexOf('sentbytes');
-                const latencyIdx = header.indexOf('latency');
-                const connectTimeIdx = header.indexOf('connect');
-
-
-                if (labelIdx === -1 || timeIdx === -1 || successIdx === -1 || timeStampIdx === -1) {
-                    throw new Error('Invalid CSV header. Required columns: timeStamp, elapsed, label, success.');
-                }
-
-                for (let i = 1; i < lines.length; i++) {
-                    const values = lines[i].split(',');
-                    if (values.length < header.length) continue;
-                    data.push({
-                        timestamp: parseInt(values[timeStampIdx].trim(), 10),
-                        sampleTime: parseInt(values[timeIdx].trim(), 10),
-                        label: values[labelIdx].trim().replace(/"/g, ''),
-                        success: values[successIdx].trim().toLowerCase() === 'true',
-                        threadName: threadNameIdx > -1 ? values[threadNameIdx].trim() : 'N/A',
-                        bytes: bytesIdx > -1 ? parseInt(values[bytesIdx].trim(), 10) : 0,
-                        sentBytes: sentBytesIdx > -1 ? parseInt(values[sentBytesIdx].trim(), 10) : 0,
-                        latency: latencyIdx > -1 ? parseInt(values[latencyIdx].trim(), 10) : 0,
-                        connectTime: connectTimeIdx > -1 ? parseInt(values[connectTimeIdx].trim(), 10) : 0,
-                    });
-                }
-                return data;
-            }
-            function parseJSON(jsonContent) {
-                const parsed = JSON.parse(jsonContent);
-                if (!Array.isArray(parsed) || !parsed[0] || !('label' in parsed[0])) {
-                    throw new Error('Invalid JSON. Expected an array of objects with keys: label, sampleTime, success, timestamp.');
-                }
-                return parsed;
-            }
-        }
-
-        function handleError(error) {
-            console.error("File processing error:", error);
-            fileNameDisplay.textContent = `Error: ${error.message}`;
-            dashboardContent.classList.add('hidden');
-            mainControlsContainer.classList.remove('hidden');
-            timelineContainer.classList.add('hidden');
-            noDataMessage.classList.remove('hidden');
-        }
-
-        // --- DASHBOARD INITIALIZATION & UPDATES ---
-        function initializeDashboard() {
-            hideMainControls(); // Collapse controls after file upload
-            filtersSection.classList.remove('hidden');
-            dashboardContent.classList.remove('hidden');
-            timelineContainer.classList.remove('hidden');
-            startOverContainer.classList.remove('hidden');
-            noDataMessage.classList.add('hidden');
-            populateFilters(allData);
-            setupTimeline();
-            applyFilters();
-        }
-        
-        applyFiltersBtn.addEventListener('click', applyFilters);
-
-        function applyFilters() {
-            const labelFilterValue = document.getElementById('label-filter').value;
-            const statusFilterValue = document.getElementById('status-filter').value;
-            filteredData = allData.filter(item => 
-                (labelFilterValue === 'all' || item.label === labelFilterValue) &&
-                (statusFilterValue === 'all' || String(item.success) === statusFilterValue)
-            );
-            currentPage = 1;
-            timelineSlider.value = timelineSlider.max;
-            handleTimelineChange();
-        }
-
-        function updateDashboard(dataToRender = filteredData) {
-            if (dataToRender.length === 0) {
-                noDataMessage.classList.remove('hidden');
-                dashboardContent.classList.add('hidden');
-                return;
-            }
-            noDataMessage.classList.add('hidden');
-            dashboardContent.classList.remove('hidden');
-            
-            const processed = processDataForCharts(dataToRender);
-            
-            renderSummary(processed.summary);
-            renderChart('response-time-over-time-chart', getResponseTimeSeries(dataToRender));
-            renderChart('throughput-chart', getThroughput(dataToRender));
-            renderChart('percentile-chart', getPercentiles(dataToRender));
-            renderChart('error-rate-chart', getErrorRates(dataToRender));
-            renderChart('success-fail-trend-chart', getSuccessFailTrend(dataToRender));
-            renderTable(dataToRender);
-            generateInsights(dataToRender, processed);
-            updateDynamicThemeAndTimeline(dataToRender);
-        }
-
-        // --- DATA PROCESSING ---
-        function processDataForCharts(data) {
-            const summary = calculateSummaryMetrics(data);
-            return { summary };
-        }
-
-        // --- METRIC CALCULATIONS ---
-        function calculateSummaryMetrics(data) {
-            if (data.length === 0) return { totalRequests: 0, totalErrors: 0, avgTime: 0, maxTime: 0, peakThroughput: 0, thresholdBreaches: [] };
-            const times = data.map(d => d.sampleTime).filter(t => !isNaN(t));
-            if (times.length === 0) return { totalRequests: data.length, totalErrors: data.filter(d => !d.success).length, thresholdBreaches: [] };
-            
-            const threshold = parseInt(document.getElementById('threshold-input').value, 10) || 0;
-            const throughputPerSecond = {};
-            let thresholdBreaches = [];
-
-            data.forEach(d => {
-                const second = Math.floor(d.timestamp / 1000);
-                throughputPerSecond[second] = (throughputPerSecond[second] || 0) + 1;
-                if (threshold > 0 && d.sampleTime > threshold) {
-                    thresholdBreaches.push(d);
-                }
-            });
-
-            return {
-                totalRequests: data.length,
-                totalErrors: data.filter(d => !d.success).length,
-                avgTime: times.reduce((a, b) => a + b, 0) / times.length,
-                maxTime: Math.max(...times),
-                peakThroughput: Math.max(0, ...Object.values(throughputPerSecond)),
-                thresholdBreaches: thresholdBreaches
-            };
-        }
-
-        // --- CHART CONFIGS & RENDERING ---
-        function getResponseTimeSeries(data) {
-            const byLabel = groupBy(data, 'label');
-            const finalDatasets = [];
-            const allSpikePoints = []; 
-
-            for (const label in byLabel) {
-                const seriesData = byLabel[label];
-                if (seriesData.length === 0) continue;
-
-                const times = seriesData.map(d => d.sampleTime);
-                const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
-                
-                const spikeMultiplier = 2.5;
-                const absoluteThreshold = 1500;
-                const spikeThreshold = avgTime * spikeMultiplier;
-
-                const regularPoints = [];
-
-                seriesData.forEach(d => {
-                    const point = { x: d.timestamp, y: d.sampleTime };
-                    regularPoints.push(point);
-                    if (d.sampleTime > spikeThreshold && d.sampleTime > absoluteThreshold) {
-                        allSpikePoints.push({ x: d.timestamp, y: d.sampleTime, label: label }); 
-                    }
-                });
-
-                finalDatasets.push({
-                    type: 'line',
-                    label: label,
-                    data: regularPoints,
-                    borderColor: getRandomColor(),
-                    tension: 0.1,
-                    pointRadius: 1,
-                    order: 1
-                });
-            }
-
-            if (allSpikePoints.length > 0) {
-                finalDatasets.push({
-                    type: 'scatter',
-                    label: 'Spike',
-                    data: allSpikePoints,
-                    backgroundColor: 'rgba(239, 68, 68, 1)',
-                    pointStyle: 'triangle',
-                    radius: 7,
-                    hoverRadius: 10,
-                    order: 0
-                });
-            }
-
-            const options = getCommonTimeOptions('Response Time (ms)');
-            options.plugins.tooltip = {
-                callbacks: {
-                    label: function(context) {
-                        const value = context.parsed.y;
-                        const time = new Date(context.parsed.x).toLocaleTimeString();
-                        
-                        if (context.dataset.label === 'Spike') {
-                            const langTip = translations[currentLang].tips.spikeTooltip || 'Spike: {value}ms at {time}';
-                            return langTip.replace('{value}', value).replace('{time}', time);
-                        }
-
-                        let label = context.dataset.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
-                        if (context.parsed.y !== null) {
-                            label += `${context.parsed.y} ms`;
-                        }
-                        return label;
-                    }
-                }
-            };
-            
-            options.plugins.legend.onClick = (e, legendItem, legend) => {
-                const chart = legend.chart;
-                Chart.defaults.plugins.legend.onClick.call(this, e, legendItem, legend);
-
-                const spikeDatasetIndex = chart.data.datasets.findIndex(ds => ds.label === 'Spike');
-                if (spikeDatasetIndex === -1 || !chart.originalSpikes) {
-                    chart.update();
-                    return;
-                }
-
-                const visibleLabels = new Set();
-                legend.legendItems.forEach((item) => {
-                    if (!item.hidden && item.text !== 'Spike') {
-                        visibleLabels.add(item.text);
-                    }
-                });
-
-                const isSpikeLegendVisible = !legend.legendItems.find(item => item.text === 'Spike')?.hidden;
-
-                if (isSpikeLegendVisible) {
-                    const filteredSpikes = chart.originalSpikes.filter(spike => visibleLabels.has(spike.label));
-                    chart.data.datasets[spikeDatasetIndex].data = filteredSpikes;
-                } else {
-                    chart.data.datasets[spikeDatasetIndex].data = [];
-                }
-                
-                chart.update();
-            };
-
-            return {
-                data: { datasets: finalDatasets },
-                options: options
-            };
-        }
-        
-        function getThroughput(data) {
-            const throughputPerSecond = {};
-            data.forEach(d => {
-                const second = Math.floor(d.timestamp / 1000) * 1000;
-                throughputPerSecond[second] = (throughputPerSecond[second] || 0) + 1;
-            });
-            const chartData = Object.entries(throughputPerSecond).map(([ts, count]) => ({ x: parseInt(ts), y: count }));
-            return {
-                type: 'line',
-                data: {
-                    datasets: [{
-                        label: 'Requests/sec',
-                        data: chartData,
-                        borderColor: '#34d399',
-                        fill: true,
-                        backgroundColor: 'rgba(52, 211, 153, 0.2)'
-                    }]
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Translations Object ---
+            const translations = {
+                en: {
+                    boot_message: "Initializing Dashboard Engine...",
+                    main_title: "Performance Analysis Dashboard Tool",
+                    greeting_morning: "Good Morning!",
+                    greeting_afternoon: "Good Afternoon!",
+                    greeting_evening: "Good Evening!",
+                    greeting_suffix: "Ready to decode performance like a boss?",
+                    tab_intro: "🚀 Introduction",
+                    tab_dashboard: '<span class="bouncer">📊</span> Dashboard',
+                    tab_raw: "🧾 Raw Data Explained",
+                    tab_tips: "💡 Tips",
+                    footer_copyright: "&copy; 2025 Performance Analysis Dashboard by TSB. All Rights Reserved.",
+                    quotes: [
+                        "Every number tells a story – uncover it.",
+                        "Performance speaks louder than promises.",
+                        "Good data, great decisions.",
+                        "Metrics don’t lie. They whisper insights."
+                    ],
+                    // --- CONTENT FOR ALL TABS (ENGLISH) ---
+                    "introduction_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Welcome!</h2><p class="mb-4 text-gray-700">The Performance Analysis Dashboard Tool is designed to help QA engineers, developers, and analysts interpret performance test results visually and interactively. By uploading result files from tools like JMeter, you can quickly assess system responsiveness, throughput, error patterns, and critical bottlenecks.</p><p class="mb-4 text-gray-700">This guide will walk you through how to use the tool effectively, especially for analyzing .jmx test data.</p><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mt-6"><h3 class="font-semibold text-blue-800">Getting Started is Easy</h3><ol class="list-decimal list-inside mt-2 text-gray-700 space-y-2"><li><strong>Upload a Test Result File:</strong> On the main screen, click the "Upload Results File(s)" section. Drag and drop or click to upload files with extensions .jmx, .csv, or .json.</li><li><strong>Use Filters:</strong> Once data is loaded, use filters like 'Label', 'Status', and 'Response Time Threshold' to refine your view.</li><li><strong>Analyze:</strong> The dashboard will parse your file and display interactive visualizations instantly.</li></ol></div>`,
+                    "dashboard_content": `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Full Dashboard View</h2>
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-blue-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-blue-800">Total Requests</h3><p class="text-2xl font-semibold text-blue-900">500</p></div><p class="text-gray-700"><strong>What it shows:</strong> The total number of requests sent to the server during the test. It measures the overall workload.</p><p class="mt-2 text-gray-600"><strong>Example:</strong> If you are testing a login page with 500 virtual users, this card shows all 500 login attempts.</p></div>
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-red-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-red-800">Total Errors</h3><p class="text-2xl font-semibold text-red-900">50</p></div><p class="text-gray-700"><strong>What it shows:</strong> The total count of failed requests. This is a critical indicator of system stability issues.</p><p class="mt-2 text-gray-600"><strong>Example:</strong> If 50 out of 500 login attempts failed, this card highlights the 50 errors, pointing to potential problems.</p></div>
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-yellow-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-yellow-800">Avg/Max Response</h3><p class="text-2xl font-semibold text-yellow-900">3614 / 25556</p></div><p class="text-gray-700"><strong>What it shows:</strong> The average and maximum time (in milliseconds) it took for the server to respond. It helps gauge overall speed and identify the worst-case delays.</p><p class="mt-2 text-gray-600"><strong>Example:</strong> An average of 3614ms is okay, but a max of 25556ms means at least one user waited over 25 seconds, a severe performance issue.</p></div>
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-green-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-green-800">Peak Throughput</h3><p class="text-2xl font-semibold text-green-900">7 req/s</p></div><p class="text-gray-700"><strong>What it shows:</strong> The highest number of requests the system handled in a single second. This indicates the system's maximum capacity under test conditions.</p><p class="mt-2 text-gray-600"><strong>Example:</strong> A peak of 7 req/s means at its busiest moment, the system processed 7 requests in one second.</p></div>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-purple-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-purple-800">Threshold Breaches</h3><p class="text-2xl font-semibold text-purple-900">0</p></div><p class="text-gray-700"><strong>What it shows:</strong> The number of requests that took longer than the acceptable response time you define in the 'Threshold (ms)' filter. This helps you see how many requests failed to meet your performance goals.</p><p class="mt-2 text-gray-600"><strong>Example:</strong> If you set the threshold to 2000ms and click 'Apply', this card will show how many requests took longer than 2 seconds to complete. If it shows '0', it means all requests were faster than your target.</p></div>
+                        <!-- Charts and Explanations -->
+                        <div class="space-y-12 mt-12">
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/3RX9SKyv/2-Response-Time-Over.png" alt="Response Time Over Time Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">1. Response Time Over Time (by Label)</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart displays the response time for every request throughout the test. Each colored line is a different transaction (e.g., 'Login', 'Add to Cart'). The data shows many sharp spikes, with some reaching over 25,000ms, indicating severe, intermittent slowdowns.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> Imagine you're at a drive-thru. Most cars get their food in 5 minutes. But this chart shows that randomly, some cars wait 25 minutes. It helps us see exactly when those long waits happen and for which food order ('Label').</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/KjmfCdLs/3-Throughput.png" alt="Throughput Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">2. Throughput (Requests/sec)</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart measures how many requests the system successfully handles each second. The data shows a very unstable throughput, fluctuating between 1 and 7 requests/sec, meaning the system's processing capability is erratic.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> This is like a cashier's speed. The chart shows that sometimes the cashier serves 7 people per minute, but then suddenly slows down to only 1. This tells us the cashier can't maintain a steady pace, which is a problem for the queue.</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/Vv4gwDWs/4-90th.png" alt="Percentiles Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">3. 90th/95th Percentiles by Label</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart reveals the "worst-case" experience for most users. The data shows that for the first two labels, 5-10% of requests took over 10,000ms, which is very slow, even if the average time was okay.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> If the 95th percentile for 'Login' is 10 seconds, it means 95 out of 100 people logged in faster than 10 seconds, but 5 people had to wait 10 seconds or more. It highlights hidden frustrations that an average wouldn't show.</p>
+                                </div>
+                            </div>
+                             <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/zvRht72P/5-Error-Distribution.png" alt="Error Distribution Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">4. Error Distribution by Label</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart pinpoints where errors are happening. The data clearly shows one massive bar, meaning nearly all 50 errors came from a single transaction ('Invoice List: Preview Detail').</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> If you sell 100 different products, this chart tells you that only one product is causing all the customer complaints. You know exactly where to focus your attention to fix the problem.</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/52Xgc5Y1/6-Success-Failure.png" alt="Success vs. Failure Trend Chart" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">5. Success vs. Failure Trend</h3>
+                                    <p class="text-gray-700"><strong>What it shows:</strong> This chart compares successful requests (green area) against failed requests (red line) over time. The data shows that while most requests succeed, there are small, consistent spikes of errors throughout the test.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Simple Example:</strong> This is a factory's quality report. The chart shows that the factory is mostly producing good products (big green area), but every hour, a few defective products (small red spikes) are made. It tells us the problem is small but continuous.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    "raw-data_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Understanding the Detailed Data Table</h2><p class="mb-6 text-gray-700">The <strong>Detailed Data</strong> table, which would appear in a full report, provides the most granular analysis by listing every single request. The table includes pagination and helpful color-coding for quick insights.</p><div class="bg-gray-50 p-5 rounded-lg border border-gray-200"><h3 class="font-semibold text-lg text-gray-900 mb-3">Table Columns Explained</h3><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-gray-700"><li><strong>Start Time:</strong> When the request was initiated.</li><li><strong>Thread Name:</strong> The virtual user thread that sent the request.</li><li><strong>Label:</strong> The name of the specific request or transaction.</li><li><strong>Sample Time (ms):</strong> Total time taken for the request (end-to-end).</li><li><strong>Status:</strong> Whether the request was a 'Success' or 'Failure'.</li><li><strong>Bytes:</strong> Size of the response data in bytes.</li><li><strong>Sent Bytes:</strong> Size of the data sent in the request.</li><li><strong>Latency:</strong> Time to first byte of the response.</li><li><strong>Connect Time:</strong> Time taken to establish a connection to the server.</li></ul></div><div class="mt-6"><h3 class="font-semibold text-lg text-gray-900 mb-3">Key Features</h3><ul class="space-y-3"><li class="flex items-start"><span class="text-red-500 mr-3 text-2xl">❌</span><div><strong class="text-red-600">Red Rows for Failures:</strong> Failed requests are highlighted in red for immediate identification.</div></li><li class="flex items-start"><span class="text-yellow-500 mr-3 text-2xl">⚠️</span><div><strong class="text-yellow-600">Yellow Rows for Breaches:</strong> Requests that exceed your response time threshold are marked in yellow.</div></li><li class="flex items-start"><span class="text-blue-500 mr-3 text-2xl">📄</span><div><strong>Pagination:</strong> Data is neatly organized into pages for easy browsing.</div></li></ul></div>`,
+                    "tips_content": `<h2 class="text-2xl font-bold text-gray-800 mb-6">Tips & Advanced Features</h2><p class="mb-6 text-gray-700">Explore advanced features to deepen your analysis and share your findings.</p><div class="space-y-8"><div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-red-800">1. Export PDF Report</h3><p class="mt-2 text-gray-700">Click the <strong>"Export PDF"</strong> button to download a comprehensive, printable PDF. This report includes all summary metrics and charts, making it perfect for sharing with stakeholders.</p></div><div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-yellow-800">2. Download Filtered CSV</h3><p class="mt-2 text-gray-700">Click <strong>"Download CSV"</strong> to get a CSV file of the data currently displayed in the table. This is useful for external analysis, archiving raw metrics, or custom reporting.</p></div><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-blue-800">3. Analyze with TSB (AI-Powered)</h3><p class="mt-2 text-gray-700">Click the <strong>"Analyze with TSB"</strong> button to get an instant, AI-generated analysis of your performance data. The AI acts like a consultant, providing a structured report with three sections: an <strong>Executive Summary</strong>, <strong>Key Findings</strong> with supporting data, and <strong>Actionable Recommendations</strong> to help you identify and resolve bottlenecks.</p></div><div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-green-800">4. Export to Doc</h3><p class="mt-2 text-gray-700">After the AI has generated its analysis, a <strong>"Copy for Google Docs"</strong> button will appear. Clicking this button copies the entire AI report to your clipboard and automatically opens a new Google Doc in a new tab. Simply paste the content to create a shareable document of the performance analysis.</p></div><div class="bg-sky-50 border-l-4 border-sky-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-sky-800">5. Listen to AI Report</h3><p class="mt-2 text-gray-700">After generating the TSB analysis, click the <strong>"Listen"</strong> button to have the report read aloud. This text-to-speech feature makes it easy to review the findings hands-free.</p></div><div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-indigo-800">6. Replay Timeline</h3><p class="mt-2 text-gray-700">Use the <strong>Replay Timeline</strong> slider to visualize how the performance test unfolded over time. Drag the slider from right to left to see how the charts and summary metrics update, showing the state of the test at any given moment.</p></div><div class="bg-gray-100 border-l-4 border-gray-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-gray-800">7. Dynamic Theme</h3><p class="mt-2 text-gray-700">The dashboard's background theme changes based on the test results. A high error rate will shift the background to a cautionary red or orange, providing an immediate visual cue about the overall health of the system.</p></div><div class="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-pink-800">8. Collapsible Sections</h3><p class="mt-2 text-gray-700">The <strong>Setup & Filters</strong> area and the <strong>Detailed Data</strong> table are collapsible. Click their headers to show or hide them, allowing you to focus on the charts or summary data without scrolling.</p></div><div class="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-teal-800">9. Spike Detection</h3><p class="mt-2 text-gray-700">The <strong>Response Time Over Time</strong> chart automatically highlights significant performance spikes with a red triangle marker, making it easy to spot individual requests that are much slower than average.</p></div></div>`
                 },
-                options: getCommonTimeOptions('Number of Requests')
+                vn: {
+                    boot_message: "Đang khởi tạo Engine Bảng điều khiển...",
+                    main_title: "Công cụ Bảng điều khiển Phân tích Hiệu suất",
+                    greeting_morning: "Chào buổi sáng!",
+                    greeting_afternoon: "Chào buổi chiều!",
+                    greeting_evening: "Chào buổi tối!",
+                    greeting_suffix: "Sẵn sàng giải mã hiệu suất như một chuyên gia?",
+                    tab_intro: "🚀 Giới thiệu",
+                    tab_dashboard: '<span class="bouncer">📊</span> Bảng điều khiển',
+                    tab_raw: "🧾 Giải thích Dữ liệu Thô",
+                    tab_tips: "💡 Mẹo",
+                    footer_copyright: "&copy; 2025 Bảng điều khiển Phân tích Hiệu suất. Mọi quyền được bảo lưu.",
+                    quotes: [
+                        "Mỗi con số đều kể một câu chuyện – hãy khám phá nó.",
+                        "Hiệu suất nói lên nhiều điều hơn lời hứa.",
+                        "Dữ liệu tốt, quyết định tuyệt vời.",
+                        "Số liệu không nói dối. Chúng thì thầm những hiểu biết sâu sắc."
+                    ],
+                    // --- CONTENT FOR ALL TABS (VIETNAMESE) ---
+                    "introduction_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Chào mừng!</h2><p class="mb-4 text-gray-700">Công cụ Bảng điều khiển Phân tích Hiệu suất được thiết kế để giúp các kỹ sư QA, nhà phát triển và nhà phân tích diễn giải kết quả kiểm tra hiệu suất một cách trực quan và tương tác. Bằng cách tải lên các tệp kết quả từ các công cụ như JMeter, bạn có thể nhanh chóng đánh giá khả năng phản hồi của hệ thống, thông lượng, các mẫu lỗi và các điểm nghẽn quan trọng.</p><p class="mb-4 text-gray-700">Hướng dẫn này sẽ chỉ cho bạn cách sử dụng công cụ một cách hiệu quả, đặc biệt là để phân tích dữ liệu kiểm tra .jmx.</p><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mt-6"><h3 class="font-semibold text-blue-800">Bắt đầu thật dễ dàng</h3><ol class="list-decimal list-inside mt-2 text-gray-700 space-y-2"><li><strong>Tải lên Tệp Kết quả Kiểm tra:</strong> Trên màn hình chính, nhấp vào phần "Tải lên Tệp Kết quả". Kéo và thả hoặc nhấp để tải lên các tệp có phần mở rộng .jmx, .csv hoặc .json.</li><li><strong>Sử dụng Bộ lọc:</strong> Sau khi dữ liệu được tải, hãy sử dụng các bộ lọc như 'Nhãn', 'Trạng thái' và 'Ngưỡng Thời gian Phản hồi' để tinh chỉnh chế độ xem của bạn.</li><li><strong>Phân tích:</strong> Bảng điều khiển sẽ phân tích cú pháp tệp của bạn và hiển thị các hình ảnh hóa tương tác ngay lập tức.</li></ol></div>`,
+                    "dashboard_content": `
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Chế độ xem Toàn bộ Bảng điều khiển</h2>
+                        <!-- Thẻ Tóm tắt -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-blue-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-blue-800">Tổng Yêu cầu</h3><p class="text-2xl font-semibold text-blue-900">500</p></div><p class="text-gray-700"><strong>Nó cho thấy gì:</strong> Tổng số yêu cầu được gửi đến máy chủ trong quá trình kiểm tra. Nó đo lường khối lượng công việc tổng thể.</p><p class="mt-2 text-gray-600"><strong>Ví dụ:</strong> Nếu bạn đang kiểm tra trang đăng nhập với 500 người dùng ảo, thẻ này sẽ hiển thị tất cả 500 lần thử đăng nhập.</p></div>
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-red-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-red-800">Tổng Lỗi</h3><p class="text-2xl font-semibold text-red-900">50</p></div><p class="text-gray-700"><strong>Nó cho thấy gì:</strong> Tổng số yêu cầu không thành công. Đây là một chỉ số quan trọng về các vấn đề ổn định của hệ thống.</p><p class="mt-2 text-gray-600"><strong>Ví dụ:</strong> Nếu 50 trong số 500 lần thử đăng nhập không thành công, thẻ này sẽ làm nổi bật 50 lỗi đó, chỉ ra các vấn đề tiềm ẩn.</p></div>
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-yellow-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-yellow-800">Phản hồi TB/Tối đa</h3><p class="text-2xl font-semibold text-yellow-900">3614 / 25556</p></div><p class="text-gray-700"><strong>Nó cho thấy gì:</strong> Thời gian trung bình và tối đa (tính bằng mili giây) mà máy chủ cần để phản hồi. Nó giúp đánh giá tốc độ tổng thể và xác định các độ trễ tồi tệ nhất.</p><p class="mt-2 text-gray-600"><strong>Ví dụ:</strong> Trung bình 3614ms là ổn, nhưng tối đa 25556ms có nghĩa là ít nhất một người dùng đã phải đợi hơn 25 giây, một vấn đề hiệu suất nghiêm trọng.</p></div>
+                            <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-green-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-green-800">Thông lượng Đỉnh</h3><p class="text-2xl font-semibold text-green-900">7 y.cầu/giây</p></div><p class="text-gray-700"><strong>Nó cho thấy gì:</strong> Số lượng yêu cầu cao nhất mà hệ thống xử lý được trong một giây. Điều này cho biết công suất tối đa của hệ thống trong điều kiện thử nghiệm.</p><p class="mt-2 text-gray-600"><strong>Ví dụ:</strong> Mức đỉnh 7 y.cầu/giây có nghĩa là vào thời điểm bận rộn nhất, hệ thống đã xử lý 7 yêu cầu trong một giây.</p></div>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50 border"><div class="bg-purple-100 p-4 rounded-lg text-center shadow mb-4"><h3 class="font-bold text-purple-800">Vi phạm Ngưỡng</h3><p class="text-2xl font-semibold text-purple-900">0</p></div><p class="text-gray-700"><strong>Nó cho thấy gì:</strong> Số lượng yêu cầu mất nhiều thời gian hơn thời gian phản hồi chấp nhận được mà bạn xác định trong bộ lọc 'Ngưỡng (ms)'. Điều này giúp bạn biết có bao nhiêu yêu cầu không đạt được mục tiêu hiệu suất của mình.</p><p class="mt-2 text-gray-600"><strong>Ví dụ:</strong> Nếu bạn đặt ngưỡng là 2000ms và nhấp vào 'Áp dụng', thẻ này sẽ hiển thị số lượng yêu cầu mất hơn 2 giây để hoàn thành. Nếu nó hiển thị '0', điều đó có nghĩa là tất cả các yêu cầu đều nhanh hơn mục tiêu của bạn.</p></div>
+                        <!-- Biểu đồ và Giải thích -->
+                        <div class="space-y-12 mt-12">
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/3RX9SKyv/2-Response-Time-Over.png" alt="Biểu đồ Thời gian Phản hồi" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">1. Thời gian Phản hồi Theo Thời gian (theo Nhãn)</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Thời gian phản hồi của mỗi yêu cầu trong suốt quá trình kiểm tra. Mỗi đường màu là một giao dịch khác nhau (ví dụ: 'Đăng nhập', 'Thêm vào giỏ hàng'). Dữ liệu cho thấy nhiều đột biến sắc nét, một số lên tới hơn 25.000ms, cho thấy tình trạng chậm nghiêm trọng và không liên tục.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Hãy tưởng tượng bạn đang ở quầy cà phê. Hầu hết mọi người nhận được cà phê trong 5 phút. Nhưng biểu đồ này cho thấy rằng một cách ngẫu nhiên, một số người phải đợi 25 phút. Nó giúp chúng ta thấy chính xác khi nào những lần chờ đợi lâu đó xảy ra và cho loại đơn hàng nào ('Nhãn').</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/KjmfCdLs/3-Throughput.png" alt="Biểu đồ Thông lượng" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">2. Thông lượng (Yêu cầu/giây)</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Số lượng yêu cầu mà hệ thống xử lý thành công mỗi giây. Dữ liệu cho thấy thông lượng rất không ổn định, dao động từ 1 đến 7 yêu cầu/giây, có nghĩa là khả năng xử lý của hệ thống rất thất thường.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Điều này giống như tốc độ của một nhân viên thu ngân. Biểu đồ cho thấy đôi khi nhân viên phục vụ 7 người mỗi phút, nhưng sau đó đột ngột chậm lại chỉ còn 1 người. Điều này cho chúng ta biết nhân viên không thể duy trì một tốc độ ổn định, gây ra vấn đề cho hàng đợi.</p>
+                                </div>
+                            </div>
+                            <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/Vv4gwDWs/4-90th.png" alt="Biểu đồ Phân vị" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">3. Phân vị 90/95 theo Nhãn</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Trải nghiệm "tồi tệ nhất" đối với hầu hết người dùng. Dữ liệu cho thấy đối với hai nhãn đầu tiên, 5-10% yêu cầu mất hơn 10.000ms, rất chậm, ngay cả khi thời gian trung bình vẫn ổn.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Nếu phân vị thứ 95 cho 'Đăng nhập' là 10 giây, điều đó có nghĩa là 95 trong số 100 người đăng nhập nhanh hơn 10 giây, nhưng 5 người phải đợi 10 giây hoặc hơn. Nó làm nổi bật những sự bực bội tiềm ẩn mà một giá trị trung bình sẽ che giấu.</p>
+                                </div>
+                            </div>
+                             <div class="chart-block flex flex-col md:flex-row-reverse items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/022Zn19z/5-Error-Distribution.png" alt="Biểu đồ Phân phối Lỗi" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">4. Phân phối Lỗi theo Nhãn</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> Nơi mà các lỗi đang xảy ra. Dữ liệu cho thấy rõ một thanh lớn, có nghĩa là gần như tất cả 50 lỗi đều đến từ một giao dịch duy nhất ('Invoice List: Preview Detail').</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Nếu bạn bán 100 sản phẩm khác nhau, biểu đồ này cho bạn biết rằng chỉ có một sản phẩm gây ra tất cả các khiếu nại của khách hàng. Bạn biết chính xác nơi cần tập trung sự chú ý để khắc phục sự cố.</p>
+                                </div>
+                            </div>
+                             <div class="chart-block flex flex-col md:flex-row items-center gap-8 p-4 rounded-lg bg-gray-50 border">
+                                <img src="https://i.postimg.cc/52Xgc5Y1/6-Success-Failure.png" alt="Biểu đồ Xu hướng Thành công và Thất bại" class="clarity-img w-full md:w-1/2 rounded-lg shadow-md border">
+                                <div class="w-full md:w-1/2">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">5. Xu hướng Thành công và Thất bại</h3>
+                                    <p class="text-gray-700"><strong>Biểu đồ này cho thấy:</strong> So sánh số lượng yêu cầu thành công (vùng màu xanh) với yêu cầu thất bại (đường màu đỏ) theo thời gian. Dữ liệu cho thấy trong khi hầu hết các yêu cầu đều thành công, có những đột biến lỗi nhỏ và liên tục trong suốt quá trình kiểm tra.</p>
+                                    <p class="mt-3 text-gray-600"><strong>Ví dụ đơn giản:</strong> Đây là báo cáo chất lượng của một nhà máy. Biểu đồ cho thấy nhà máy chủ yếu sản xuất các sản phẩm tốt (vùng màu xanh lớn), nhưng mỗi giờ, một vài sản phẩm bị lỗi (các đột biến màu đỏ nhỏ) được tạo ra. Nó cho chúng ta biết vấn đề là nhỏ nhưng liên tục.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    "raw-data_content": `<h2 class="text-2xl font-bold text-gray-800 mb-4">Giải thích Bảng Dữ liệu Chi tiết</h2><p class="mb-6 text-gray-700">Bảng <strong>Dữ liệu Chi tiết</strong>, sẽ xuất hiện trong một báo cáo đầy đủ, cung cấp phân tích chi tiết nhất bằng cách liệt kê từng yêu cầu một. Bảng bao gồm phân trang và mã màu hữu ích để có cái nhìn nhanh.</p><div class="bg-gray-50 p-5 rounded-lg border border-gray-200"><h3 class="font-semibold text-lg text-gray-900 mb-3">Giải thích các Cột của Bảng</h3><ul class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-gray-700"><li><strong>Thời gian Bắt đầu:</strong> Khi yêu cầu được khởi tạo.</li><li><strong>Tên Luồng:</strong> Luồng người dùng ảo đã gửi yêu cầu.</li><li><strong>Nhãn:</strong> Tên của yêu cầu hoặc giao dịch cụ thể.</li><li><strong>Thời gian Mẫu (ms):</strong> Tổng thời gian thực hiện yêu cầu (từ đầu đến cuối).</li><li><strong>Trạng thái:</strong> Yêu cầu 'Thành công' hay 'Thất bại'.</li><li><strong>Bytes:</strong> Kích thước dữ liệu phản hồi tính bằng byte.</li><li><strong>Bytes đã gửi:</strong> Kích thước dữ liệu được gửi trong yêu cầu.</li><li><strong>Độ trễ:</strong> Thời gian đến byte đầu tiên của phản hồi.</li><li><strong>Thời gian Kết nối:</strong> Thời gian cần thiết để thiết lập kết nối với máy chủ.</li></ul></div><div class="mt-6"><h3 class="font-semibold text-lg text-gray-900 mb-3">Các Tính năng Chính</h3><ul class="space-y-3"><li class="flex items-start"><span class="text-red-500 mr-3 text-2xl">❌</span><div><strong class="text-red-600">Các hàng màu đỏ cho Lỗi:</strong> Các yêu cầu không thành công được tô màu đỏ để nhận dạng ngay lập tức.</div></li><li class="flex items-start"><span class="text-yellow-500 mr-3 text-2xl">⚠️</span><div><strong class="text-yellow-600">Các hàng màu vàng cho Vi phạm:</strong> Các yêu cầu vượt quá ngưỡng thời gian phản hồi của bạn được đánh dấu bằng màu vàng.</div></li><li class="flex items-start"><span class="text-blue-500 mr-3 text-2xl">📄</span><div><strong>Phân trang:</strong> Dữ liệu được sắp xếp gọn gàng thành các trang để dễ dàng duyệt.</div></li></ul></div>`,
+                    "tips_content": `<h2 class="text-2xl font-bold text-gray-800 mb-6">Mẹo & Tính năng Nâng cao</h2><p class="mb-6 text-gray-700">Khám phá các tính năng nâng cao để phân tích sâu hơn và chia sẻ kết quả của bạn.</p><div class="space-y-8"><div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-red-800">1. Xuất Báo cáo PDF</h3><p class="mt-2 text-gray-700">Nhấp vào nút <strong>"Xuất PDF"</strong> để tải xuống một tệp PDF toàn diện, có thể in được. Báo cáo này bao gồm tất cả các số liệu tóm tắt và biểu đồ, làm cho nó hoàn hảo để chia sẻ với các bên liên quan.</p></div><div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-yellow-800">2. Tải xuống CSV đã lọc</h3><p class="mt-2 text-gray-700">Nhấp vào <strong>"Tải xuống CSV"</strong> để nhận tệp CSV của dữ liệu hiện đang được hiển thị trong bảng. Điều này hữu ích cho việc phân tích bên ngoài, lưu trữ các số liệu thô hoặc báo cáo tùy chỉnh.</p></div><div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-blue-800">3. Phân tích với TSB (Hỗ trợ bởi AI)</h3><p class="mt-2 text-gray-700">Nhấp vào nút <strong>"Phân tích với TSB"</strong> để nhận ngay một bản phân tích dữ liệu hiệu suất do AI tạo ra. AI hoạt động như một nhà tư vấn, cung cấp một báo cáo có cấu trúc gồm ba phần: <strong>Tóm tắt Điều hành</strong>, <strong>Những phát hiện chính</strong> kèm theo dữ liệu hỗ trợ, và <strong>Các khuyến nghị có thể hành động</strong> để giúp bạn xác định và giải quyết các điểm nghẽn.</p></div><div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-green-800">4. Xuất ra Tài liệu</h3><p class="mt-2 text-gray-700">Sau khi AI đã tạo ra bản phân tích, một nút <strong>"Sao chép cho Google Docs"</strong> sẽ xuất hiện. Nhấp vào nút này sẽ sao chép toàn bộ báo cáo AI vào bộ nhớ tạm của bạn và tự động mở một tài liệu Google Doc mới trong một tab mới. Chỉ cần dán nội dung để tạo một tài liệu phân tích hiệu suất có thể chia sẻ.</p></div><div class="bg-sky-50 border-l-4 border-sky-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-sky-800">5. Nghe Báo cáo AI</h3><p class="mt-2 text-gray-700">Sau khi tạo phân tích TSB, nhấp vào nút <strong>"Nghe"</strong> để báo cáo được đọc to. Tính năng chuyển văn bản thành giọng nói này giúp bạn dễ dàng xem lại các phát hiện mà không cần dùng tay.</p></div><div class="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-indigo-800">6. Dòng thời gian Phát lại</h3><p class="mt-2 text-gray-700">Sử dụng thanh trượt <strong>Dòng thời gian Phát lại</strong> để hình dung quá trình kiểm tra hiệu suất diễn ra theo thời gian. Kéo thanh trượt từ phải sang trái để xem các biểu đồ và số liệu tóm tắt cập nhật, hiển thị trạng thái của bài kiểm tra tại bất kỳ thời điểm nào.</p></div><div class="bg-gray-100 border-l-4 border-gray-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-gray-800">7. Chủ đề Động</h3><p class="mt-2 text-gray-700">Chủ đề nền của bảng điều khiển thay đổi dựa trên kết quả kiểm tra. Tỷ lệ lỗi cao sẽ chuyển nền sang màu đỏ hoặc cam cảnh báo, cung cấp một dấu hiệu trực quan ngay lập tức về tình trạng tổng thể của hệ thống.</p></div><div class="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-pink-800">8. Các mục có thể thu gọn</h3><p class="mt-2 text-gray-700">Khu vực <strong>Cài đặt & Bộ lọc</strong> và bảng <strong>Dữ liệu Chi tiết</strong> có thể thu gọn. Nhấp vào tiêu đề của chúng để hiển thị hoặc ẩn, cho phép bạn tập trung vào các biểu đồ hoặc dữ liệu tóm tắt mà không cần cuộn.</p></div><div class="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-lg"><h3 class="text-xl font-semibold text-teal-800">9. Phát hiện đột biến</h3><p class="mt-2 text-gray-700">Biểu đồ <strong>Thời gian Phản hồi Theo Thời gian</strong> tự động làm nổi bật các đột biến hiệu suất đáng kể bằng một điểm đánh dấu hình tam giác màu đỏ, giúp dễ dàng phát hiện các yêu cầu cá nhân chậm hơn nhiều so với mức trung bình.</p></div></div>`
+                }
             };
-        }
-        
-        function getPercentiles(data) {
-            const byLabel = groupBy(data, 'label');
-            const labels = Object.keys(byLabel);
-            const p90 = [];
-            const p95 = [];
-            labels.forEach(label => {
-                const times = byLabel[label].map(d => d.sampleTime).sort((a,b) => a-b);
-                p90.push(times.length > 0 ? times[Math.floor(times.length * 0.9)] : 0);
-                p95.push(times.length > 0 ? times[Math.floor(times.length * 0.95)] : 0);
-            });
-            return {
-                type: 'bar',
-                data: {
-                    labels,
-                    datasets: [
-                        { label: '90th Percentile', data: p90, backgroundColor: 'rgba(96, 165, 250, 0.7)' },
-                        { label: '95th Percentile', data: p95, backgroundColor: 'rgba(59, 130, 246, 0.7)' }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Response Time (ms)'
-                            }
-                        }
+
+            let currentLang = 'en';
+            let quoteInterval;
+
+            function setLanguage(lang) {
+                currentLang = lang;
+                document.querySelectorAll('[data-lang-key]').forEach(el => {
+                    const key = el.dataset.langKey;
+                    if (translations[lang][key]) {
+                        el.innerHTML = translations[lang][key];
                     }
-                }
-            };
-        }
-        
-        function getErrorRates(data) {
-            const byLabel = groupBy(data.filter(d => !d.success), 'label');
-            const labels = Object.keys(byLabel);
-            const errorCounts = labels.map(label => byLabel[label].length);
+                });
 
-            return {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Number of Errors',
-                        data: errorCounts,
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Errors'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            };
-        }
-        
-        function getSuccessFailTrend(data) {
-            const trend = {};
-             data.forEach(d => {
-                const second = Math.floor(d.timestamp / 1000) * 1000;
-                if (!trend[second]) trend[second] = { success: 0, fail: 0 };
-                d.success ? trend[second].success++ : trend[second].fail++;
-            });
-            const successData = [], failData = [];
-            Object.entries(trend).sort((a,b) => a[0] - b[0]).forEach(([ts, counts]) => {
-                successData.push({ x: parseInt(ts), y: counts.success });
-                failData.push({ x: parseInt(ts), y: counts.fail });
-            });
-            return {
-                type: 'line',
-                data: {
-                    datasets: [
-                        { label: 'Success', data: successData, borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', fill: true, tension: 0.1 },
-                        { label: 'Failure', data: failData, borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.2)', fill: true, tension: 0.1 }
-                    ]
-                },
-                options: getCommonTimeOptions('Number of Requests')
-            }
-        }
-
-        function renderChart(canvasId, config) {
-            if (charts[canvasId]) charts[canvasId].destroy();
-            const chartWrapper = document.getElementById(canvasId).parentElement.parentElement;
-            if (config && config.data && config.data.datasets.some(ds => ds.data && ds.data.length > 0)) {
-                chartWrapper.style.display = 'block';
-                const chartInstance = new Chart(document.getElementById(canvasId).getContext('2d'), config);
-                charts[canvasId] = chartInstance;
-
-                if (canvasId === 'response-time-over-time-chart') {
-                    const spikeDataset = config.data.datasets.find(ds => ds.label === 'Spike');
-                    chartInstance.originalSpikes = spikeDataset ? [...spikeDataset.data] : [];
-                }
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    const tabId = button.dataset.tab;
+                    if (tabId === 'introduction') button.innerHTML = translations[lang].tab_intro;
+                    if (tabId === 'dashboard') button.innerHTML = translations[lang].tab_dashboard;
+                    if (tabId === 'raw-data') button.innerHTML = translations[lang].tab_raw;
+                    if (tabId === 'tips') button.innerHTML = translations[lang].tab_tips;
+                });
                 
-                chartWrapper.ondblclick = () => {
-                    if (maximizedChart) {
-                        maximizedChart.destroy();
+                document.querySelectorAll('.tab-content').forEach(contentDiv => {
+                    let contentKey = `${contentDiv.id}_content`;
+                     if (contentDiv.id === 'tips') {
+                        contentKey = 'tips_content';
                     }
-                    chartModal.classList.remove('hidden');
-                    maximizedChart = new Chart(maximizedChartCanvas, config);
-                     if (canvasId === 'response-time-over-time-chart') {
-                        maximizedChart.originalSpikes = chartInstance.originalSpikes;
+                    if(translations[lang][contentKey]) {
+                        contentDiv.innerHTML = translations[lang][contentKey];
                     }
-                };
-            } else {
-                chartWrapper.style.display = 'none';
-            }
-        }
+                });
 
-        function renderSummary(summary) {
-            summaryStatsContainer.innerHTML = `
-                <div class="summary-card p-4 rounded-lg shadow border"><p class="text-sm text-gray-600" data-translate-key="totalRequests">Total Requests</p><p class="text-3xl font-bold text-blue-600">${summary.totalRequests || 0}</p></div>
-                <div class="summary-card p-4 rounded-lg shadow border"><p class="text-sm text-gray-600" data-translate-key="totalErrors">Total Errors</p><p class="text-3xl font-bold text-red-600">${summary.totalErrors || 0}</p></div>
-                <div class="summary-card p-4 rounded-lg shadow border"><p class="text-sm text-gray-600" data-translate-key="avgMaxResponse">Avg / Max Response (ms)</p><p class="text-3xl font-bold text-gray-800">${(summary.avgTime || 0).toFixed(0)} / ${summary.maxTime || 0}</p></div>
-                <div class="summary-card p-4 rounded-lg shadow border"><p class="text-sm text-gray-600" data-translate-key="peakThroughput">Peak Throughput (req/s)</p><p class="text-3xl font-bold text-green-600">${summary.peakThroughput || 0}</p></div>
-                <div id="threshold-breaches-card" class="summary-card p-4 rounded-lg shadow border cursor-pointer"><p class="text-sm text-gray-600" data-translate-key="thresholdBreaches">Threshold Breaches</p><p class="text-3xl font-bold text-yellow-600">${summary.thresholdBreaches.length || 0}</p></div>
-            `;
-            
-            document.getElementById('threshold-breaches-card').addEventListener('click', () => {
-                renderThresholdBreachesTable(summary.thresholdBreaches);
-                thresholdModal.classList.remove('hidden');
-            });
-            updateLanguage(currentLang);
-        }
+                updateGreeting(lang);
+                updateFooter(lang);
 
-        // --- TABLE & PAGINATION ---
-        function renderTable(dataToRender) {
-            const tableBody = document.getElementById('resultsTableBody');
-            tableBody.innerHTML = '';
-            const threshold = parseInt(document.getElementById('threshold-input').value, 10);
-
-            const paginatedData = dataToRender.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-            paginatedData.forEach((item, index) => {
-                const row = document.createElement('tr');
-                if (!item.success) {
-                    row.classList.add('error-row');
-                } else if (threshold && item.sampleTime > threshold) {
-                    row.classList.add('threshold-exceeded-row');
-                }
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(item.timestamp).toLocaleTimeString('en-US')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.threadName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.label}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.sampleTime}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm ${item.success ? 'text-green-600' : 'text-red-600'}">${item.success ? 'Success' : 'Failure'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.bytes}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.sentBytes}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.latency}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.connectTime}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-            renderPaginationControls(dataToRender.length);
-        }
-        
-        function renderThresholdBreachesTable(breaches) {
-            const tableBody = document.getElementById('threshold-table-body');
-            tableBody.innerHTML = '';
-            breaches.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(item.timestamp).toLocaleTimeString('en-US')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.label}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.sampleTime}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function renderPaginationControls(totalRows) {
-            const container = document.getElementById('pagination-controls');
-            const totalPages = Math.ceil(totalRows / rowsPerPage);
-            container.innerHTML = '';
-            if (totalPages <= 1) return;
-            const prevButton = document.createElement('button');
-            prevButton.textContent = 'Previous';
-            prevButton.disabled = currentPage === 1;
-            prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50';
-            prevButton.onclick = () => { currentPage--; renderTable(filteredData); };
-            const nextButton = document.createElement('button');
-            nextButton.textContent = 'Next';
-            nextButton.disabled = currentPage === totalPages;
-            nextButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50';
-            nextButton.onclick = () => { currentPage++; renderTable(filteredData); };
-            const pageInfo = document.createElement('span');
-            pageInfo.className = 'text-sm text-gray-700';
-            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-            const buttonWrapper = document.createElement('div');
-            buttonWrapper.appendChild(prevButton);
-            buttonWrapper.appendChild(nextButton);
-            container.appendChild(pageInfo);
-            container.appendChild(buttonWrapper);
-        }
-
-        // --- UTILITIES ---
-        function populateFilters(data) {
-            const labelFilter = document.getElementById('label-filter');
-            labelFilter.innerHTML = '<option value="all" data-translate-key="allLabels">All Labels</option>';
-            [...new Set(data.map(item => item.label))].forEach(label => {
-                const option = document.createElement('option');
-                option.value = label;
-                option.textContent = label;
-                labelFilter.appendChild(option);
-            });
-            updateLanguage(currentLang);
-        }
-        
-        function getCommonTimeOptions(yAxisTitle) {
-            return {
-                responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: { type: 'time', time: { unit: 'second', displayFormats: { second: 'HH:mm:ss' } }, title: { display: true, text: 'Time' } },
-                    y: { beginAtZero: true, title: { display: true, text: yAxisTitle } }
-                },
-                plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 20 } } }
-            };
-        }
-
-        function groupBy(arr, key) {
-            return arr.reduce((acc, item) => {
-                (acc[item[key]] = acc[item[key]] || []).push(item);
-                return acc;
-            }, {});
-        }
-
-        function getRandomColor(alpha = 1) {
-            const r = Math.floor(Math.random() * 200);
-            const g = Math.floor(Math.random() * 200);
-            const b = Math.floor(Math.random() * 200);
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
-        
-        downloadCsvBtn.addEventListener('click', () => {
-             if (filteredData.length === 0) { alert('No data to download.'); return; }
-            const headers = Object.keys(filteredData[0]).join(',') + '\n';
-            const csvContent = filteredData.map(d => Object.values(d).join(',')).join('\n');
-            const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.setAttribute("href", URL.createObjectURL(blob));
-            link.setAttribute("download", "filtered_performance_data.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-
-        function downloadChart(canvasId, filename) {
-            const canvas = document.getElementById(canvasId);
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-        
-        function generateInsights(data, processedData) {
-            const tips = {
-                'response-time-tip': '', 'throughput-tip': '', 'error-rate-tip': '', 'percentile-tip': '', 'success-fail-trend-tip': ''
-            };
-            const summary = processedData.summary;
-            const langTips = translations[currentLang].tips;
-
-            if (summary.maxTime > summary.avgTime * 3 && summary.maxTime > 1000) {
-                const spike = data.find(d => d.sampleTime === summary.maxTime);
-                if (spike) {
-                    tips['response-time-tip'] = langTips.responseTimeSpike
-                        .replace('{maxTime}', summary.maxTime)
-                        .replace('{label}', spike.label)
-                        .replace('{time}', new Date(spike.timestamp).toLocaleTimeString())
-                        .replace('{avgTime}', summary.avgTime.toFixed(0));
-                }
+                document.getElementById('lang-en').classList.toggle('lang-btn-active', lang === 'en');
+                document.getElementById('lang-vn').classList.toggle('lang-btn-active', lang === 'vn');
             }
 
-            const errorRate = summary.totalRequests > 0 ? (summary.totalErrors / summary.totalRequests) * 100 : 0;
-            if (errorRate > 10) {
-                tips['error-rate-tip'] = langTips.highErrorRate.replace('{errorRate}', errorRate.toFixed(1));
-            }
-
-            const throughputData = getThroughput(data).data.datasets[0].data;
-            if (throughputData.length > 5) {
-                const lastPoints = throughputData.slice(-5).map(p => p.y);
-                const avgLast = lastPoints.reduce((a, b) => a + b, 0) / lastPoints.length;
-                const deviation = Math.sqrt(lastPoints.map(y => Math.pow(y - avgLast, 2)).reduce((a, b) => a + b, 0) / lastPoints.length);
-                if (deviation < avgLast * 0.1 && avgLast > 0) {
-                    tips['throughput-tip'] = langTips.throughputCapped.replace('{avgThroughput}', avgLast.toFixed(0));
-                }
-            }
-            
-            const percentileData = getPercentiles(data);
-            if(percentileData.data.labels.length > 0) {
-                const p95s = percentileData.data.datasets[1].data;
-                const maxP95 = Math.max(...p95s);
-                if (maxP95 > 2000) {
-                    const maxIndex = p95s.indexOf(maxP95);
-                    const label = percentileData.data.labels[maxIndex];
-                    tips['percentile-tip'] = langTips.percentileHigh.replace('{label}', label).replace('{p95}', maxP95);
-                }
-            }
-
-            const trendData = getSuccessFailTrend(data).data.datasets[1].data;
-            if (trendData.length > 2) {
-                 const lastFailure = trendData[trendData.length - 1].y;
-                 const prevFailure = trendData[trendData.length - 2].y;
-                 if (lastFailure > prevFailure * 2 && lastFailure > 5) {
-                     tips['success-fail-trend-tip'] = langTips.successFailFluctuation;
-                 }
-            }
-
-            const showTips = toggleTipsCheckbox.checked;
-            for (const [id, tip] of Object.entries(tips)) {
-                const el = document.getElementById(id);
-                if (el) {
-                    if (tip && showTips) {
-                        el.textContent = tip;
-                        el.style.display = 'block';
-                    } else {
-                        el.style.display = 'none';
-                    }
-                }
-            }
-        }
-        
-        async function getTsbInsights() {
-            if (filteredData.length === 0) {
-                alert("Please upload and filter data first.");
-                return;
-            }
-
-            tsbInsightsModal.classList.remove('hidden');
-            tsbLoader.style.display = 'flex';
-            tsbInsightsContent.style.display = 'none';
-            tsbModalFooter.classList.add('hidden');
-            listenTsbReportBtn.classList.add('hidden');
-            tsbInsightsContent.innerHTML = '';
-
-            const summary = calculateSummaryMetrics(filteredData);
-            const dataSummaryForPrompt = `
-                - Total Requests: ${summary.totalRequests}
-                - Total Errors: ${summary.totalErrors}
-                - Average Response Time: ${summary.avgTime.toFixed(2)} ms
-                - Maximum Response Time: ${summary.maxTime} ms
-                - Peak Throughput: ${summary.peakThroughput.toFixed(2)} requests/second
-                - Number of requests over threshold: ${summary.thresholdBreaches.length}
-            `;
-
-            const language = currentLang === 'vi' ? 'Vietnamese' : 'English';
-            const prompt = `Act as a top-tier management consultant from a firm like McKinsey. Analyze the following summary of a load test and provide a professional, structured report in ${language}. Start the report with the title "## Performance Assessment Report: Load Test Analysis". Do not add any other introductory phrases or headers before this title. The report should contain three sections: 1. Executive Summary, 2. Key Findings (with data points), and 3. Actionable Recommendations. The summary is as follows: \n${dataSummaryForPrompt}`;
-            
-            try {
-                const text = await callGeminiAPI(prompt);
+            function updateGreeting(lang) {
+                const hour = new Date().getHours();
+                let greetingKey = 'greeting_evening';
+                if (hour < 12) greetingKey = 'greeting_morning';
+                else if (hour < 18) greetingKey = 'greeting_afternoon';
                 
-                const logDate = filteredData.length > 0 ? new Date(filteredData[0].timestamp) : new Date();
-                const analyzeDate = new Date();
-                const formattedLogDate = analyzeDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                const formattedAnalyzeDate = analyzeDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-                const reportHeader = `
-                    <p><strong>Prepared For:</strong> [Client Name/Team]</p>
-                    <p><strong>Log Date:</strong> ${formattedLogDate}</p>
-                    <p><strong>Analyze Date:</strong> ${formattedAnalyzeDate}</p>
-                    <p><strong>Prepared By:</strong> TSB</p>
-                    <hr style="margin: 1rem 0;">
-                `;
-                
-                const titleRegex = /(<br>)*(##? Performance Assessment Report: Load Test Analysis)/i;
-                const match = text.match(titleRegex);
-                let reportBody = text;
-                let reportTitle = '';
-
-                if (match) {
-                    reportTitle = `<h2>${match[2].replace(/##? /,'')}</h2>`;
-                    reportBody = text.replace(titleRegex, '');
-                }
-
-                tsbInsightsContent.innerHTML = reportTitle + reportHeader + reportBody.replace(/\n/g, '<br>').replace(/\*\*/g, '<strong>').replace(/\*/g, '<em>');
-
-            } catch (error) {
-                console.error("Error calling TSB API:", error);
-                tsbInsightsContent.innerHTML = `<p class="text-red-500">Sorry, an error occurred while generating insights. Please try again. Details: ${error.message}</p>`;
-            } finally {
-                tsbLoader.style.display = 'none';
-                tsbInsightsContent.style.display = 'block';
-                tsbModalFooter.classList.remove('hidden');
-                listenTsbReportBtn.classList.remove('hidden');
-            }
-        }
-        
-        async function callGeminiAPI(prompt) {
-            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            const apiKey = "AIzaSyDVqQazlPiOALxXFF3eukRL_Bx2C5Qwtjs";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`API call failed with status: ${response.status}. Response: ${errorText}`);
+                const greetingText = translations[lang][greetingKey];
+                const suffixText = translations[lang].greeting_suffix;
+                document.getElementById('contextual-greeting').innerHTML = `${greetingText} ${suffixText}`;
             }
 
-            const result = await response.json();
-            
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                return result.candidates[0].content.parts[0].text;
-            }
-            return 'No insights generated.';
-        }
-
-
-        // --- LANGUAGE & TRANSLATION ---
-        const translations = {
-            en: {
-                dashboardTitle: "Performance Analysis Dashboard Tool", dashboardSubtitle: "Upload a results file (.jmx, .csv, .json) to explore performance data.",
-                uploadTitle: "Upload Results File(s)", clickToUpload: "Click to upload", orDragAndDrop: "or drag and drop", supportedFiles: "Supports .jmx, .csv, .json files",
-                helpTitle: "Need help reading the charts?", helpSubtitle: "Click the button below for a detailed guide on how to interpret the performance data.", understandChartsBtn: "Understand The Charts",
-                setupAndFiltersTitle: "Setup, Filters & Export", filtersTitle: "Data Filters & Export", filterByLabel: "Filter by Label", filterByStatus: "Filter by Status", allLabels: "All Labels", statusAll: "All", statusSuccess: "Success", statusFailure: "Failure",
-                responseTimeThreshold: "Threshold (ms)", applyBtn: "Apply", showAssistantTips: "Show Assistant Tips",
-                exportPdfBtn: "Export PDF", tsbAnalysisBtn: "✨ Analyze with TSB",
-                totalRequests: "Total Requests", totalErrors: "Total Errors", avgMaxResponse: "Avg / Max Response (ms)", peakThroughput: "Peak Throughput (req/s)", thresholdBreaches: "Threshold Breaches",
-                responseTimeChartTitle: "Response Time Over Time (by Label)", throughputChartTitle: "Throughput (Requests/sec)", percentilesChartTitle: "90th/95th Percentiles by Label", errorDistributionChartTitle: "Error Distribution by Label", successFailTrendChartTitle: "Success vs. Failure Trend",
-                savePngBtn: "Save PNG", detailedDataTitle: "Detailed Data", downloadCsvBtn: "Download CSV",
-                tableStartTime: "Start Time", tableThreadName: "Thread Name", tableLabel: "Label", tableSampleTime: "Sample Time (ms)", tableStatus: "Status", tableBytes: "Bytes", tableSentBytes: "Sent Bytes", tableLatency: "Latency", tableConnectTime: "Connect Time (ms)",
-                noDataMessage: "No valid data found in the uploaded file.", thresholdBreachesTitle: "Threshold Breaches", tsbAnalysisTitle: "✨ Analyze with TSB",
-                exportDocBtn: "Copy for Google Docs", copyInstructions: "Click the button to copy the report and open a new Google Doc for pasting.", copiedToClipboard: "Copied!",
-                replayTimelineTitle: "Replay Timeline", listenBtn: "🔊 Listen", startOverBtn: "Start Over",
-                goToTopBtn: "Go to Top",
-                footer_copyright: "&copy; 2025 Performance Analysis Dashboard by TSB. All Rights Reserved.",
-                quotes: ["Every number tells a story – uncover it.", "Performance speaks louder than promises.", "Good data, great decisions.", "Metrics don’t lie. They whisper insights."],
-                tips: {
-                    responseTimeSpike: '⚠️ Response time spiked to {maxTime}ms for "{label}" at {time}. This is significantly higher than the average of {avgTime}ms.',
-                    highErrorRate: '🔴 The overall error rate is {errorRate}%, which is high. Check the error distribution chart for problematic requests.',
-                    throughputCapped: '⚠️ Throughput appears to have capped at around {avgThroughput} req/sec, suggesting a potential system bottleneck.',
-                    percentileHigh: '📈 The 95th percentile for "{label}" is {p95}ms, indicating that 5% of requests are slower than this value.',
-                    successFailFluctuation: '📉 Note the fluctuations between successful and failed requests. A sudden increase in failures could indicate a problem.',
-                    spikeTooltip: 'Spike Detected: {value}ms at {time}'
-                }
-            },
-            vi: {
-                dashboardTitle: "Bảng điều khiển Phân tích Hiệu suất", dashboardSubtitle: "Tải lên tệp kết quả (.jmx, .csv, .json) để khám phá dữ liệu hiệu suất.",
-                uploadTitle: "Tải lên tệp kết quả", clickToUpload: "Nhấn để tải lên", orDragAndDrop: "hoặc kéo và thả", supportedFiles: "Hỗ trợ các tệp .jmx, .csv, .json",
-                helpTitle: "Cần trợ giúp đọc biểu đồ?", helpSubtitle: "Nhấp vào nút bên dưới để có hướng dẫn chi tiết về cách diễn giải dữ liệu hiệu suất.", understandChartsBtn: "Hiểu các biểu đồ",
-                setupAndFiltersTitle: "Cài đặt, Bộ lọc & Xuất", filtersTitle: "Bộ lọc dữ liệu & Xuất", filterByLabel: "Lọc theo nhãn", filterByStatus: "Lọc theo trạng thái", allLabels: "Tất cả các nhãn", statusAll: "Tất cả", statusSuccess: "Thành công", statusFailure: "Thất bại",
-                responseTimeThreshold: "Ngưỡng (ms)", applyBtn: "Áp dụng", showAssistantTips: "Hiển thị Mẹo trợ lý",
-                exportPdfBtn: "Xuất PDF", tsbAnalysisBtn: "✨ Phân tích với TSB",
-                totalRequests: "Tổng số yêu cầu", totalErrors: "Tổng số lỗi", avgMaxResponse: "Phản hồi TB / Tối đa (ms)", peakThroughput: "Thông lượng đỉnh (req/s)", thresholdBreaches: "Vi phạm ngưỡng",
-                responseTimeChartTitle: "Thời gian phản hồi theo thời gian (theo nhãn)", throughputChartTitle: "Thông lượng (Yêu cầu/giây)", percentilesChartTitle: "Phân vị 90/95 theo nhãn", errorDistributionChartTitle: "Phân phối lỗi theo nhãn", successFailTrendChartTitle: "Xu hướng thành công và thất bại",
-                savePngBtn: "Lưu PNG", detailedDataTitle: "Dữ liệu chi tiết", downloadCsvBtn: "Tải xuống CSV",
-                tableStartTime: "Thời gian bắt đầu", tableThreadName: "Tên luồng", tableLabel: "Nhãn", tableSampleTime: "Thời gian mẫu (ms)", tableStatus: "Trạng thái", tableBytes: "Bytes", tableSentBytes: "Bytes đã gửi", tableLatency: "Độ trễ", tableConnectTime: "Thời gian kết nối (ms)",
-                noDataMessage: "Không tìm thấy dữ liệu hợp lệ trong tệp đã tải lên.", thresholdBreachesTitle: "Vi phạm ngưỡng", tsbAnalysisTitle: "✨ Phân tích từ TSB",
-                exportDocBtn: "Sao chép cho Google Docs", copyInstructions: "Nhấp vào nút để sao chép báo cáo và mở một Google Doc mới để dán.", copiedToClipboard: "Đã sao chép!",
-                replayTimelineTitle: "Dòng thời gian phát lại", listenBtn: "🔊 Nghe", startOverBtn: "Bắt đầu lại",
-                goToTopBtn: "Lên trên cùng",
-                footer_copyright: "&copy; 2025 Bảng điều khiển Phân tích Hiệu suất bởi TSB. Bảo lưu mọi quyền.",
-                quotes: ["Mỗi con số kể một câu chuyện – hãy khám phá nó.", "Hiệu suất nói lên nhiều điều hơn lời hứa.", "Dữ liệu tốt, quyết định tuyệt vời.", "Số liệu không nói dối. Chúng thì thầm những hiểu biết."],
-                tips: {
-                    responseTimeSpike: '⚠️ Thời gian phản hồi tăng vọt lên {maxTime}ms cho "{label}" vào lúc {time}. Con số này cao hơn đáng kể so với mức trung bình là {avgTime}ms.',
-                    highErrorRate: '🔴 Tỷ lệ lỗi tổng thể là {errorRate}%, mức này là cao. Kiểm tra biểu đồ phân phối lỗi để tìm các yêu cầu có vấn đề.',
-                    throughputCapped: '⚠️ Thông lượng dường như đã đạt đỉnh ở khoảng {avgThroughput} req/giây, cho thấy có thể có điểm nghẽn hệ thống.',
-                    percentileHigh: '📈 Phân vị thứ 95 cho "{label}" là {p95}ms, cho thấy 5% yêu cầu chậm hơn giá trị này.',
-                    successFailFluctuation: '📉 Lưu ý sự biến động giữa các yêu cầu thành công và thất bại. Sự gia tăng đột ngột của các lỗi có thể chỉ ra một vấn đề.',
-                    spikeTooltip: 'Phát hiện đột biến: {value}ms lúc {time}'
-                }
-            }
-        };
-
-        function updateLanguage(lang) {
-            currentLang = lang;
-            document.querySelectorAll('[data-translate-key]').forEach(element => {
-                const key = element.dataset.translateKey;
-                if (translations[lang] && translations[lang][key]) {
-                    if (element.tagName === 'BUTTON' && element.id === 'go-to-top-btn') {
-                        element.title = translations[lang][key];
-                    } else {
-                        element.textContent = translations[lang][key];
-                    }
-                }
-            });
-
-            if (quoteInterval) clearInterval(quoteInterval);
-
-            const footerCopyright = document.getElementById('footer-copyright');
-            const footerQuote = document.getElementById('footer-quote');
-            if (translations[lang] && translations[lang].footer_copyright) {
-                footerCopyright.innerHTML = translations[lang].footer_copyright;
-            }
-            if (translations[lang] && translations[lang].quotes) {
+            function updateFooter(lang) {
+                const footer = document.getElementById('footer');
                 const quotes = translations[lang].quotes;
-                const setRandomQuote = () => {
-                    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-                    footerQuote.textContent = `"${randomQuote}"`;
-                };
-                setRandomQuote();
-                quoteInterval = setInterval(setRandomQuote, 5000);
-            }
-        }
+                let quoteIndex = 0;
+                
+                footer.innerHTML = `<p id="footer-quote" class="text-base text-gray-600">${quotes[0]}</p><p class="mt-2">${translations[lang].footer_copyright}</p>`;
+                const quoteElement = document.getElementById('footer-quote');
 
-        // --- NEW/MODIFIED FEATURE IMPLEMENTATIONS ---
-
-        function playTsbReport() {
-            if (typeof SpeechSynthesisUtterance === 'undefined' || typeof window.speechSynthesis === 'undefined') {
-                alert('Sorry, your browser does not support text-to-speech.');
-                return;
-            }
-            window.speechSynthesis.cancel();
-
-            const textToSpeak = tsbInsightsContent.innerText;
-            if (!textToSpeak.trim()) {
-                alert("No report content to read.");
-                return;
+                if (quoteInterval) clearInterval(quoteInterval);
+                quoteInterval = setInterval(() => {
+                    quoteIndex = (quoteIndex + 1) % quotes.length;
+                    quoteElement.style.opacity = 0;
+                    setTimeout(() => {
+                        quoteElement.innerText = quotes[quoteIndex];
+                        quoteElement.style.opacity = 1;
+                    }, 500);
+                }, 4000);
             }
 
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = currentLang === 'vi' ? 'vi-VN' : 'en-US';
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function setupTimeline() {
-            if (allData.length === 0) return;
-            const firstTs = allData[0].timestamp;
-            const lastTs = allData[allData.length - 1].timestamp;
-            timelineSlider.min = firstTs;
-            timelineSlider.max = lastTs;
-            timelineSlider.value = lastTs;
-            timelineLabel.textContent = new Date(parseInt(timelineSlider.value)).toLocaleString();
-        }
-
-        function handleTimelineChange() {
-            const timestamp = parseInt(timelineSlider.value);
-            timelineLabel.textContent = new Date(timestamp).toLocaleString();
-            const dataSubset = filteredData.filter(d => d.timestamp <= timestamp);
-            updateDashboard(dataSubset);
-        }
-
-        function updateDynamicThemeAndTimeline(dataSubset) {
-            if (!dataSubset || dataSubset.length === 0) {
-                timelineSlider.style.background = '#ddd';
-                bgOverlay.style.backgroundColor = 'rgba(0, 20, 80, 0.5)';
-                return;
-            }
+            // --- Initial Setup ---
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                bootScreen.style.opacity = '0';
+                setTimeout(() => bootScreen.style.display = 'none', 1000);
+            }, 1500);
             
-            const summary = calculateSummaryMetrics(dataSubset);
-            const errorRate = summary.totalRequests > 0 ? (summary.totalErrors / summary.totalRequests) : 0;
+            const tabData = [
+                { id: 'introduction' }, 
+                { id: 'dashboard' },
+                { id: 'raw-data' },
+                { id: 'tips' }
+            ];
+
+            const tabNav = document.getElementById('tab-nav');
+            const contentArea = document.getElementById('tab-content-area');
+            const tabBackgrounds = {
+                introduction: 'bg-blue-50', 
+                dashboard: 'bg-indigo-50', 
+                'raw-data': 'bg-red-50', 
+                'tips': 'bg-purple-50'
+            };
+
+            tabData.forEach((tab, index) => {
+                const tabButton = document.createElement('a');
+                tabButton.href = '#';
+                tabButton.className = `tab-button animate-bounce-on-hover whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-gray-500 hover:text-blue-600 hover:border-blue-300 ${index === 0 ? 'tab-active' : ''}`;
+                tabButton.dataset.tab = tab.id;
+                tabNav.appendChild(tabButton);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.id = tab.id;
+                contentDiv.className = `tab-content ${index !== 0 ? 'hidden' : ''}`;
+                contentArea.appendChild(contentDiv);
+            });
             
-            let color, bgColor;
-            if (errorRate >= 0.05) {
-                color = '#ef4444'; // Red
-                bgColor = 'rgba(255, 0, 0, 0.6)';
-            } else if (errorRate >= 0.01) {
-                color = '#f59e0b'; // Yellow
-                bgColor = 'rgba(255, 255, 0, 0.5)';
-            } else {
-                color = '#16a34a'; // Green
-                bgColor = 'rgba(0, 255, 0, 0.4)';
-            }
+            tabNav.addEventListener('click', (e) => {
+                e.preventDefault();
+                const clickedTab = e.target.closest('.tab-button');
+                if (!clickedTab || clickedTab.classList.contains('tab-active')) return;
 
-            // Update Timeline Slider
-            const progress = ((timelineSlider.value - timelineSlider.min) / (timelineSlider.max - timelineSlider.min)) * 100;
-            timelineSlider.style.background = `linear-gradient(to right, ${color} ${progress}%, #ddd ${progress}%)`;
+                const tabId = clickedTab.dataset.tab;
 
-            // Update Background Overlay
-            bgOverlay.style.backgroundColor = bgColor;
-        }
+                document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('tab-active'));
+                clickedTab.classList.add('tab-active');
+                document.body.className = 'text-gray-800 ' + (tabBackgrounds[tabId] || 'bg-gray-50');
+                
+                contentArea.classList.remove('animate-fadeIn');
+                void contentArea.offsetWidth;
+                contentArea.classList.add('animate-fadeIn');
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.toggle('hidden', content.id !== tabId);
+                });
+            });
 
-        function toggleMainControls() {
-            mainControlsContent.classList.toggle('hidden');
-            mainControlsArrow.classList.toggle('rotate-180');
-        }
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+            document.getElementById('lang-vn').addEventListener('click', () => setLanguage('vn'));
 
-        function showMainControls() {
-            mainControlsContent.classList.remove('hidden');
-            mainControlsArrow.classList.add('rotate-180');
-        }
-
-        function hideMainControls() {
-            mainControlsContent.classList.add('hidden');
-            mainControlsArrow.classList.remove('rotate-180');
-        }
-
-
-        // --- INITIAL LOAD ---
-        updateLanguage(currentLang);
-        
-        // --- SOURCE CODE PROTECTION ---
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        document.addEventListener('keydown', event => {
-            if (event.key === 'F12' || 
-               (event.ctrlKey && event.shiftKey && ['I', 'J', 'C'].includes(event.key.toUpperCase())) ||
-               (event.ctrlKey && event.key.toUpperCase() === 'U')) {
-                event.preventDefault();
-            }
+            setLanguage('en');
+            document.body.className = 'text-gray-800 ' + (tabBackgrounds['introduction'] || 'bg-gray-50');
+            contentArea.classList.add('animate-fadeIn');
+            document.getElementById('introduction').classList.remove('hidden');
         });
-
     </script>
 
 </body>
-</html>
+</ht
